@@ -14,6 +14,7 @@ import { FramePacer } from '../perf/pacer';
 import { Histogram, RollingStats, Timeline, Totals } from '../perf/stats';
 import { WakeLock, deviceSummary, gpuName, isStandalone } from '../platform/ios';
 import { buildReport, type RunData } from './report';
+import { mountSoundCheck } from './soundCheck';
 
 // ---------------------------------------------------------------- elements
 
@@ -81,6 +82,16 @@ const loop = new FrameLoop(video, onFrame);
 const device = deviceSummary();
 const gpu = gpuName();
 const engineLog: string[] = [];
+
+// Counters the Sound check reads before and after each sound, to see whether
+// making noise disturbed the camera.
+let totalMutes = 0;
+let totalVideoPauses = 0;
+const soundCheck = mountSoundCheck(
+  el('sound-card'),
+  () => ({ cameraOn: state === 'running', frames: run?.frames ?? 0, mutes: totalMutes, videoPauses: totalVideoPauses }),
+  () => renderReport(),
+);
 
 // ------------------------------------------------------- catching problems
 // On an iPhone you cannot open a developer console, so we keep a copy of
@@ -260,6 +271,8 @@ function newRun(config: Config): Run {
     stutters: 0,
     worstGapMs: 0,
     interruptions: 0,
+    cameraMutes: 0,
+    videoPauses: 0,
     wakeLock: 'released',
     wakeLockError: null,
     errors: [],
@@ -361,6 +374,12 @@ function beginSegment(): void {
     return;
   }
   camera.onInterrupted = onCameraLost;
+  camera.onMuteChange = (muted) => {
+    if (!muted) return;
+    totalMutes++;
+    if (run) run.cameraMutes++;
+    logLine('camera feed muted by iOS');
+  };
   run.camera = camera.info();
   syncStageShape();
   stage.classList.toggle('mirror', run.config.facing === 'user');
@@ -670,6 +689,7 @@ function currentReport(): string {
     gpu,
     engineLog,
     wakeLockSupported: wakeLock.supported,
+    soundLines: soundCheck.reportLines(),
   });
 }
 
@@ -741,6 +761,16 @@ if (isStandalone()) {
 } else {
   modeChip.textContent = `${device.browser} tab`;
 }
+
+// If something (for example the voice) pauses the camera picture while a
+// test is running, count it and start it again straight away.
+video.addEventListener('pause', () => {
+  if (state !== 'running') return;
+  totalVideoPauses++;
+  if (run) run.videoPauses++;
+  logLine('video element paused while running');
+  void video.play().catch(() => undefined);
+});
 
 setState('idle');
 renderReport();

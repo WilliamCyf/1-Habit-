@@ -210,6 +210,19 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 
   Example: 5 MET, 70 kg, 20 minutes gives 5 x 70 x (20 ÷ 60) = 117 kcal.
 
+### Sound
+
+- **Web Audio API:** making sound from maths instead of audio files. A beep
+  is a wave at a chosen pitch, switched on for a fraction of a second.
+- **Speech synthesis:** the browser reading text aloud with the phone's
+  built-in voices.
+- **Audio ducking:** lowering one sound while another plays, like a sat-nav
+  talking over the radio.
+- **Audio session:** iOS's rule for how an app shares the speakers: mix with
+  other apps, dip them, or pause them.
+- **Unlocking audio:** iOS only lets a page make sound after you tap
+  something, so the app prepares its sound engine inside a tap.
+
 ### Tools
 
 - **npm:** the app store for code libraries. `npm install` downloads them.

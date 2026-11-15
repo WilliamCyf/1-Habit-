@@ -49,6 +49,8 @@ function sampleRun(seconds: number, ms: number): RunData {
     stutters: 2,
     worstGapMs: 80,
     interruptions: 0,
+    cameraMutes: 0,
+    videoPauses: 0,
     wakeLock: 'active',
     wakeLockError: null,
     errors: [],
@@ -58,7 +60,7 @@ function sampleRun(seconds: number, ms: number): RunData {
 describe('buildReport', () => {
   it('explains that no test has run yet', () => {
     const text = buildReport({ run: null, device, gpu: 'Apple GPU', engineLog: [], wakeLockSupported: true });
-    expect(text).toContain('No test has been run yet');
+    expect(text).toContain('No camera test has been run yet');
     expect(text).toContain('Home Screen app');
   });
 

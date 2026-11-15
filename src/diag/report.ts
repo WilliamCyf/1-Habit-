@@ -38,6 +38,9 @@ export interface RunData {
   stutters: number;
   worstGapMs: number;
   interruptions: number;
+  /** Times iOS silenced the camera feed, and times the video element paused. */
+  cameraMutes: number;
+  videoPauses: number;
   wakeLock: string;
   wakeLockError: string | null;
   errors: string[];
@@ -49,6 +52,8 @@ export interface ReportInput {
   gpu: string;
   engineLog: readonly string[];
   wakeLockSupported: boolean;
+  /** Ready-made lines from the Sound check, if the page has one. */
+  soundLines?: readonly string[];
 }
 
 function clock(ms: number): string {
@@ -88,7 +93,8 @@ export function buildReport(input: ReportInput): string {
   lines.push(`Screen-awake lock supported: ${input.wakeLockSupported ? 'yes' : 'no'}`);
 
   if (!run) {
-    lines.push('', 'No test has been run yet. Tap "Start camera test".');
+    lines.push('', 'No camera test has been run yet. Tap "Start camera test".');
+    if (input.soundLines?.length) lines.push('', ...input.soundLines);
     return lines.join('\n');
   }
 
@@ -161,6 +167,10 @@ export function buildReport(input: ReportInput): string {
       lines.push(`${clock(b.startSec * 1000).padStart(5)}  ${b.meanMs.toFixed(1).padStart(5)} ms / ${b.fps.toFixed(1)}`);
     }
   }
+
+  lines.push(`Camera feed silenced by iOS: ${run.cameraMutes} times · video paused: ${run.videoPauses} times`);
+
+  if (input.soundLines?.length) lines.push('', ...input.soundLines);
 
   lines.push('', 'ERRORS');
   lines.push(run.errors.length ? run.errors.join('\n') : 'none');

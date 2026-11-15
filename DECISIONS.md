@@ -211,6 +211,32 @@ named variables, so a theme is just a second set of values.
 **Choice:** the tab bar shows only Today and Me. World and Progress appear
 when they are real. An honest "In the workshop" card shows what is coming.
 
+## D21. The coach speaks, and shares the speakers with your music
+
+**Why:** the phone sits on the floor about 2 m away, so the screen cannot be
+read mid-set. You also want your own music (Spotify, Musi) to keep playing,
+with the coach talking over it, the way a sat-nav talks over the car radio.
+Lowering the music while something else speaks is called "audio ducking".
+
+**Choice:**
+
+- Voice coaching is a core feature from Milestone 2, not late polish. The
+  coach counts reps aloud and speaks every cue that also appears on screen.
+- The voice uses the phone's built-in speech (no audio files, works offline).
+  On iPhone, built-in speech is reported to dip other apps' music by itself.
+- Beeps and chimes are made with the Web Audio API and ask iOS for "mix"
+  mode, so they play alongside the music without stopping it.
+- Everything is optional: voice on/off, beeps on/off.
+
+**What is not certain yet:** how iOS 26 really behaves. Web sources disagree,
+and Apple has had bugs here, including an old one where speech interrupted
+the camera. So the camera-check page has a guided Sound check that tests
+each combination with your music playing and records whether the camera was
+disturbed. The app's defaults will be adjusted from that result.
+
+**Known limit:** in "mix" mode iOS silences web sound when the ring switch is
+on silent. The app will remind you to switch silent mode off.
+
 ---
 
 ## Points economy table

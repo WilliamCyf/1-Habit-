@@ -30,6 +30,11 @@ export interface CameraHandle {
   stop(): void;
   /** Called if iOS takes the camera away (phone call, another app). */
   onInterrupted: (() => void) | null;
+  /**
+   * Called when iOS temporarily silences the camera feed ("mutes" it) or
+   * brings it back. The feed still exists, but frames stop arriving.
+   */
+  onMuteChange: ((muted: boolean) => void) | null;
 }
 
 export type CameraErrorKind =
@@ -105,6 +110,7 @@ export async function openCamera(video: HTMLVideoElement, opts: CameraOptions): 
   const handle: CameraHandle = {
     stream,
     onInterrupted: null,
+    onMuteChange: null,
     info() {
       const s = track.getSettings();
       return {
@@ -119,6 +125,8 @@ export async function openCamera(video: HTMLVideoElement, opts: CameraOptions): 
     },
     stop() {
       track.removeEventListener('ended', interrupted);
+      track.removeEventListener('mute', muted);
+      track.removeEventListener('unmute', unmuted);
       stopStream(stream);
       video.srcObject = null;
     },
@@ -127,7 +135,15 @@ export async function openCamera(video: HTMLVideoElement, opts: CameraOptions): 
   function interrupted() {
     handle.onInterrupted?.();
   }
+  function muted() {
+    handle.onMuteChange?.(true);
+  }
+  function unmuted() {
+    handle.onMuteChange?.(false);
+  }
   track.addEventListener('ended', interrupted);
+  track.addEventListener('mute', muted);
+  track.addEventListener('unmute', unmuted);
 
   return handle;
 }

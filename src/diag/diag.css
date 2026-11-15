@@ -558,3 +558,117 @@ fieldset[disabled] {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* ---------- sound check ---------- */
+
+.sound {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.sound h3 {
+  font-size: 17px;
+}
+
+.sound .hint {
+  margin-top: 0;
+}
+
+.sound .btn {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.sound-steps {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--text);
+  font-size: 14.5px;
+}
+
+.sound-steps li + li {
+  margin-top: 6px;
+}
+
+.sound-count {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sound-title {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.sound-done {
+  color: var(--mint);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.sound-q {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.seg-label.wide {
+  flex: none;
+}
+
+.sound-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sound-option {
+  min-height: 46px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sound-option[aria-checked='true'] {
+  background: rgba(124, 242, 176, 0.14);
+  box-shadow: inset 0 0 0 2px var(--mint);
+  color: var(--mint);
+}
+
+.sound-skip {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sound-skip:empty {
+  display: none;
+}
+
+.sound .error-box {
+  margin-top: 0;
+}
