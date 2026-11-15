@@ -249,6 +249,7 @@ function newRun(config: Config): Run {
     recentMs: new RollingStats(90),
     recentGaps: new RollingStats(45),
     firstInferMs: null,
+    warmUpMs: null,
     trackerLoadMs: 0,
     cameraOpenMs: 0,
     camera: null,
@@ -260,6 +261,7 @@ function newRun(config: Config): Run {
     worstGapMs: 0,
     interruptions: 0,
     wakeLock: 'released',
+    wakeLockError: null,
     errors: [],
     fiveMinDone: false,
     consecutiveErrors: 0,
@@ -278,6 +280,8 @@ function closeSegment(): void {
 
 // --------------------------------------------------------- start and resume
 
+let pendingWarmUpMs: number | null = null;
+
 async function getTracker(config: Config): Promise<PoseTracker> {
   const key = `${config.model}/${config.delegate}`;
   if (tracker && trackerKey === key) return tracker;
@@ -285,6 +289,10 @@ async function getTracker(config: Config): Promise<PoseTracker> {
   tracker = null;
   tracker = await createPoseTracker({ model: config.model, delegate: config.delegate });
   trackerKey = key;
+  // Let the "loading" message paint, then do the slow one-off graphics
+  // setup now, while the spinner is showing, rather than on the first frame.
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  pendingWarmUpMs = tracker.warmUp();
   return tracker;
 }
 
@@ -320,6 +328,8 @@ async function start(): Promise<void> {
   camera = cam.value.handle;
   run.cameraOpenMs = cam.value.ms;
   run.trackerLoadMs = trk.value.loadMs;
+  run.warmUpMs = pendingWarmUpMs;
+  pendingWarmUpMs = null;
   run.engineRunning = trk.value.delegate;
   run.fellBackToCpu = trk.value.requested === 'GPU' && trk.value.delegate === 'CPU';
   beginSegment();
@@ -361,7 +371,9 @@ function beginSegment(): void {
   loop.start();
   startScreenLoop();
   void wakeLock.acquire().then(() => {
-    if (run) run.wakeLock = wakeLock.state;
+    if (!run) return;
+    run.wakeLock = wakeLock.state;
+    run.wakeLockError = wakeLock.lastError;
   });
 }
 
@@ -443,6 +455,10 @@ function onFrame(now: number): void {
     // The very first look includes one-off warm-up work, so we report it
     // separately instead of letting it distort the averages.
     run.firstInferMs = ms;
+    // Do not let the warm-up freeze count as a "stutter" either.
+    lastRaf = 0;
+    run.stutters = 0;
+    run.worstGapMs = 0;
   } else {
     run.inferTotals.push(ms);
     run.inferHistogram.push(ms);
@@ -722,6 +738,8 @@ const modeChip = el('mode-chip');
 if (isStandalone()) {
   modeChip.textContent = 'Home Screen app';
   modeChip.classList.add('good');
+} else {
+  modeChip.textContent = `${device.browser} tab`;
 }
 
 setState('idle');

@@ -19,6 +19,8 @@ export class WakeLock {
   private wanted = false;
   /** 'active' | 'released' | 'unsupported' | 'refused' */
   state: 'active' | 'released' | 'unsupported' | 'refused' = 'released';
+  /** Why the last request was refused, if it was. */
+  lastError: string | null = null;
 
   get supported(): boolean {
     return 'wakeLock' in navigator;
@@ -41,8 +43,10 @@ export class WakeLock {
       });
       // If release() was called while we were waiting, honour it now.
       if (!this.wanted) void this.release();
-    } catch {
+      this.lastError = null;
+    } catch (err) {
       this.state = 'refused';
+      this.lastError = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     }
   }
 
@@ -61,8 +65,25 @@ export class WakeLock {
   }
 }
 
+/**
+ * Which browser app is showing the page. On iPhone every browser uses
+ * Apple's engine underneath, but only Safari gets every feature, so it is
+ * worth knowing. Each browser adds its own tag to the "user agent" (the
+ * name badge a browser shows to websites).
+ */
+export function browserName(userAgent: string = navigator.userAgent): 'Safari' | 'Chrome' | 'Firefox' | 'Edge' | 'Other' {
+  if (/CriOS/.test(userAgent)) return 'Chrome';
+  if (/FxiOS/.test(userAgent)) return 'Firefox';
+  if (/EdgiOS/.test(userAgent)) return 'Edge';
+  if (/Safari/.test(userAgent) && /iPhone|iPad|Macintosh/.test(userAgent) && !/Chrome|Chromium/.test(userAgent)) {
+    return 'Safari';
+  }
+  return 'Other';
+}
+
 export interface DeviceSummary {
   userAgent: string;
+  browser: string;
   screen: string;
   viewport: string;
   pixelRatio: number;
@@ -75,6 +96,7 @@ export interface DeviceSummary {
 export function deviceSummary(): DeviceSummary {
   return {
     userAgent: navigator.userAgent,
+    browser: browserName(),
     screen: `${screen.width}x${screen.height}`,
     viewport: `${window.innerWidth}x${window.innerHeight}`,
     pixelRatio: window.devicePixelRatio || 1,

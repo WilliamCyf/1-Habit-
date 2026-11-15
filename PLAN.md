@@ -6,8 +6,9 @@ to earn points, and points keep a little pet and garden alive.
 
 This file is the map. Read the "Where we are" box first.
 
-> **Where we are:** Milestone 0 (camera check) is built and waiting for your
-> iPhone test. Nothing else gets built until your results are in.
+> **Where we are:** Milestone 0 passed on a real iPhone. Milestone 1 (app
+> shell, onboarding, profile, offline, install) is built and waiting for your
+> test. Next up is Milestone 2: the push-up counter.
 
 ---
 
@@ -50,10 +51,13 @@ department with one job, and they pass work to each other in one direction.
 | --- | --- | --- |
 | `src/pose/` | Camera on/off, run the pose model, draw the skeleton, joint-angle maths | **Built (M0)** |
 | `src/perf/` | Measure speed, pace the frames, later the heat governor | **Started (M0)** |
-| `src/platform/` | iPhone quirks: Home Screen mode, wake lock, storage, sound unlock | **Started (M0)** |
+| `src/platform/` | iPhone quirks: Home Screen mode, wake lock, storage, sound unlock | **Started (M0, M1)** |
 | `src/diag/` | The camera-check page (stays forever as the hidden debug page) | **Built (M0)** |
-| `src/ui/` | Screens, navigation, animations, the coach character | M1 |
-| `src/profile/` | Your details, calorie estimates, limits | M1 |
+| `src/app/` | Start-up code and the data store | **Built (M1)** |
+| `src/state/` | The save file: versions, repairs, backups | **Built (M1)** |
+| `src/ui/` | Screens, navigation, animations, Pip the coach | **Built (M1)** |
+| `src/profile/` | Your details, health check, calorie estimates, limits | **Built (M1)** |
+| `src/sw/` | The offline helper (service worker) | **Built (M1)** |
 | `src/detectors/` | One rep counter per exercise, plus anti-cheat checks | M2, M3 |
 | `src/plan/` | The coach: weekly plan, progression, deload, auto-adjust | M3 |
 | `src/economy/` | Points rules, the ledger, daily cap, streaks, quests | M4 |
@@ -77,8 +81,8 @@ then I wait for your feedback.
 
 | # | Milestone | Done when |
 | --- | --- | --- |
-| **M0** | **Camera check (now)** | You confirm tracking is smooth and the phone stays reasonably cool. Your numbers set the budget in section 4. |
-| M1 | App shell, onboarding, profile, install | You can install it, complete the health check and profile, see calorie estimates, and it works offline. |
+| M0 | Camera check | **Passed.** 15 looks per second, 19 ms think time, no heat slowdown in 5 minutes. |
+| **M1** | **App shell, onboarding, profile, install (now)** | You can install it, complete the health check and profile, see calorie estimates, and it works offline. |
 | M2 | Push-up detector, anti-cheat v1, camera screen | Real push-ups count, fake ones do not, and the test harness proves it. |
 | M3 | Plan engine and the other exercises | A 4-week plan appears, every exercise has a demo and a reliable counter. |
 | M4 | Points, shop, pet and garden | Reps earn points, points feed the pet and grow the garden. |
@@ -112,9 +116,42 @@ cheat their own phone. The goal is to make cheating harder than doing the push-u
 
 ---
 
-## 4. Speed and heat budget (starting numbers)
+## 4. Speed and heat budget
 
-These are the starting targets. Your Step 0 results will adjust them.
+### What your iPhone measured (15 November 2026, iOS 26.7, 5-minute run)
+
+| Measurement | Result | Budget | Verdict |
+| --- | --- | --- | --- |
+| Looks per second | 15.0, steady in every 30-second slice | 15 | Pass |
+| Think time, slowest 5% | 22 ms (average 19 ms, worst 42 ms) | under 40 ms | Pass |
+| Heat slowdown, last minute vs first | +0% | under 15% | Pass |
+| Screen smoothness | 59 fps, no stutters after warm-up | smooth | Pass |
+| Engine | GPU worked first time | GPU | Pass |
+
+**Locked in:** lite model, GPU engine, 640 x 480 picture, 15 looks per second.
+A look takes about 19 ms out of the 67 ms available, so roughly 70% of each
+slice is spare. That spare room is what keeps the phone cool.
+
+A second run from the Home Screen icon (1 minute) matched it: 14.9 looks per
+second, 20 ms think time, worst look 24 ms. The camera worked in Home Screen
+mode and the screen-awake lock was active.
+
+**Lessons from the runs, now part of the plan:**
+
+- In Chrome, the first look after loading froze the page for about 6
+  seconds (one-off graphics set-up). From the Home Screen it took 0.3
+  seconds. Because it can be slow, the real app does this warm-up behind a
+  "getting ready" screen and keeps the tracker alive between sets.
+- The screen-awake lock is refused in Chrome but works from the Home Screen.
+  Another reason the app should be used from its Home Screen icon.
+- Safari reports a frozen, older iOS number in its name badge ("18_7" on an
+  iOS 26 phone), so the app must never make decisions based on the iOS
+  version it reads. We test for features instead.
+
+Still open: how warm the phone felt, and whether the Home Screen app asks
+for camera permission every time it is opened.
+
+### The budget
 
 | Item | Starting budget |
 | --- | --- |

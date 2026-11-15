@@ -4,11 +4,19 @@ A no-equipment home workout coach for iPhone. The camera counts every rep, so
 reps cannot be faked. Verified reps earn points, and points keep a little pet
 and garden alive.
 
-**Status:** Milestone 0 of 6. Only the camera check exists so far. See
-[PLAN.md](PLAN.md) for the road ahead.
+**Status:** Milestone 1 of 6. See [PLAN.md](PLAN.md) for the road ahead.
+
+What works today:
+
+- Friendly setup with Pip the coach: health check, profile, calorie estimates
+- Installs to the Home Screen and opens without internet
+- Light and dark themes, metric and imperial units
+- Backup export and import
+- The camera check (body tracking diagnostics)
+
+Not built yet: rep counting, workout plans, points, the pet and garden.
 
 **Live link:** https://williamcyf.github.io/1-Habit-/
-(works after the one-time setup below)
 
 ---
 
@@ -22,7 +30,7 @@ and garden alive.
 
 ## One-time setup: switch on the free hosting
 
-Do this once, on github.com (a computer is easiest).
+Already done for this repository. Kept here in case it is ever needed again.
 
 1. Open the repository, then **Settings** → **Pages**.
 2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
@@ -37,8 +45,11 @@ The site is now live at the link above.
 
 ## Open it on your iPhone
 
-1. Open **Safari** and go to https://williamcyf.github.io/1-Habit-/
-2. Tap **Open the camera check**, then **Start camera test**, then **Allow** the camera.
+1. Open **Safari** (not Chrome) and go to https://williamcyf.github.io/1-Habit-/
+2. Follow Pip through the setup.
+
+Use Safari because it is the only iPhone browser that gets every feature,
+and it is the one that installs apps to the Home Screen properly.
 
 ## Add it to your Home Screen
 
@@ -56,6 +67,15 @@ shows the new version. If a test fails, nothing is published, so a broken
 version cannot go live by accident.
 
 You can watch each publish in the **Actions** tab of the repository.
+
+An installed copy updates itself: the next time you open it with internet, it
+notices the new version within a few seconds and reloads once.
+
+## Your data and backups
+
+Everything is saved on your phone only. In the app, go to **Me** → **Your
+data** to export a backup file (save it to Files or iCloud Drive) or import
+one. If you ever get a new phone, export on the old one and import on the new.
 
 ## Run it on a computer (optional)
 

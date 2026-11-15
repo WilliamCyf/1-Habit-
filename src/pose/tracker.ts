@@ -29,6 +29,13 @@ export interface PoseTracker {
    * person, or null if nobody was found.
    */
   detect(video: HTMLVideoElement, timestampMs: number): Landmark[] | null;
+  /**
+   * Runs the model once on a blank picture. The graphics chip does slow
+   * one-off setup the first time it is used (several seconds on an iPhone),
+   * so we get that over with behind a loading screen instead of mid-workout.
+   * Returns how long it took, or null if it could not run.
+   */
+  warmUp(): number | null;
   /** Frees the memory used by the model. */
   close(): void;
 }
@@ -91,6 +98,24 @@ export async function createPoseTracker(opts: TrackerOptions): Promise<PoseTrack
       lastTs = ts;
       const result = landmarker.detectForVideo(video, ts);
       return result.landmarks[0] ?? null;
+    },
+    warmUp() {
+      try {
+        const blank = document.createElement('canvas');
+        blank.width = 256;
+        blank.height = 256;
+        const ctx = blank.getContext('2d');
+        if (!ctx) return null;
+        ctx.fillStyle = '#444';
+        ctx.fillRect(0, 0, 256, 256);
+        const start = performance.now();
+        lastTs = Math.max(lastTs + 1, start);
+        landmarker.detectForVideo(blank, lastTs);
+        return performance.now() - start;
+      } catch (err) {
+        console.warn('Tracker warm-up failed:', err);
+        return null;
+      }
     },
     close() {
       landmarker.close();

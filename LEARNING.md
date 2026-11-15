@@ -9,9 +9,27 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 
 ```
 1-Habit-/
-├── index.html            The front door (home page)
+├── index.html            The app's one page (screens are swapped inside it)
 ├── diag.html             The camera-check page
 ├── src/                  All the code we write
+│   ├── app/              Start-up
+│   │   ├── main.ts         first code to run: load data, pick theme, show a screen
+│   │   └── store.ts        the single holder of the app's data
+│   ├── state/save.ts     the save file: version, repair, backup
+│   ├── profile/          Facts about you, and the maths
+│   │   ├── profile.ts      what a profile contains, and valid ranges
+│   │   ├── health.ts       the six safety questions
+│   │   ├── units.ts        cm/kg to ft/lb and back
+│   │   └── energy.ts       calorie formulas and starting level
+│   ├── ui/               Everything you see
+│   │   ├── dom.ts          tiny helper for building page elements
+│   │   ├── components.ts   buttons, chips, sheets, toasts
+│   │   ├── fields.ts       the profile questions
+│   │   ├── onboarding.ts   the first-run flow
+│   │   ├── home.ts         Today and Me tabs
+│   │   ├── mascot.ts       Pip, with four expressions
+│   │   └── explain.ts, install.ts, backup.ts, icons.ts
+│   ├── sw/sw.js          the offline helper (service worker)
 │   ├── pose/             Camera + body tracking
 │   │   ├── camera.ts       turns the camera on and off
 │   │   ├── tracker.ts      loads the pose model, finds the body dots
@@ -24,8 +42,7 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 │   │   └── stats.ts        averages, percentiles, the 30-second timeline
 │   ├── platform/ios.ts   iPhone quirks (Home Screen mode, keep screen awake)
 │   ├── diag/             The camera-check page's own logic and report
-│   ├── home/             The home page's logic
-│   └── styles/base.css   Colours, fonts, buttons shared by every page
+│   └── styles/           base.css (shared look) and app.css (app screens)
 ├── public/               Files served exactly as they are
 │   ├── models/             the pose model (the "brain" file)
 │   ├── icons/              app icon and mascot
@@ -133,6 +150,66 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
   running, paused, stopped). Naming the states stops impossible combinations,
   like "camera off but still counting".
 
+### Data and saving (Milestone 1)
+
+- **localStorage:** a small notebook the browser keeps for each website. We
+  store one piece of text in it: the save file.
+- **JSON:** a plain-text way of writing down data, readable by people and
+  programs. Like a neatly labelled form.
+- **Save version:** a number inside the save file saying which layout it
+  uses, so future versions of the app know how to read old saves.
+- **Migration:** a small function that upgrades a save from one version to
+  the next. Like converting last year's spreadsheet to this year's template.
+- **Sanitise:** check every value that comes from outside and repair or
+  discard anything wrong. Never trust a file just because we wrote it once.
+- **Store:** the single place that holds the app's data while it runs.
+  Screens ask the store to change things; the store saves and tells the
+  screens to redraw. One door in, one door out.
+- **try / catch:** "try this, and if it blows up, do that instead." Used
+  around anything that can fail for reasons outside our control, like storage.
+- **Pure function:** code whose answer depends only on what you hand it, with
+  no screen or storage involved. Easy to test: same input, same output.
+
+### Offline (Milestone 1)
+
+- **Service worker:** a helper script the browser keeps beside the app. It
+  sits between the app and the internet, like a shopkeeper with a stockroom.
+- **Cache:** the stockroom: copies of files kept on the phone.
+- **Cache-first:** look in the stockroom first, and only go to the internet
+  if the item is missing. Used for files that never change.
+- **Network-first:** ask the internet first, and use the stockroom copy only
+  if there is no connection. Used for the page itself, so updates arrive.
+- **Hashed filename:** the build names files after a fingerprint of their
+  contents (`main-DHXf_lqa.js`). If the contents change, the name changes, so
+  a stored copy can never be stale.
+
+### Screens (Milestone 1)
+
+- **Component:** a reusable screen part (a button, a chip row, a pop-up
+  sheet). Screens are assembled from components like Lego.
+- **CSS custom property:** a named value such as `--bg` that many style rules
+  share. A theme is just a second set of values for the same names.
+- **Sheet:** a panel that slides up from the bottom of the screen, the iPhone
+  version of a pop-up window.
+- **Toast:** a short message that appears briefly and disappears by itself.
+- **ARIA:** extra labels in the page that tell screen readers what a control
+  is ("this is a tab, and it is selected"). Also what our tests click on.
+
+### Fitness maths (Milestone 1)
+
+- **BMR (basal metabolic rate):** the energy your body uses in a day at
+  complete rest. A car's fuel use while idling.
+- **Activity factor:** a multiplier for how active your week is.
+- **MET:** how many times harder than sitting still an activity is.
+
+  ```
+                                    minutes
+  kcal = MET  x  weight in kg  x  ───────────
+                                      60
+  ```
+
+  Example: 5 MET, 70 kg, 20 minutes gives 5 x 70 x (20 ÷ 60) = 117 kcal.
+
 ### Tools
 
 - **npm:** the app store for code libraries. `npm install` downloads them.
@@ -145,7 +222,7 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 - **Dynamic import:** loading a piece of code only at the moment it is needed.
   The tracking library is not downloaded until you start the camera.
 - **Unit test:** a tiny automated check of one piece of logic, such as "does
-  the pacer really pick 15 of 30 frames?". We have 34 so far.
+  the pacer really pick 15 of 30 frames?". We have 78 so far.
 - **End-to-end test:** a robot opens the real page in a real browser and
   clicks through it. I do this with a fake camera feed.
 - **GitHub Actions (CI):** a robot on GitHub that runs the tests and publishes
@@ -184,3 +261,27 @@ Three ideas from the code worth remembering:
 3. **Always have a plan B.** If the GPU fails, the tracker restarts on the
    CPU. If the app goes to the background, the camera is switched off and
    comes back when you return.
+
+### Lesson 1: keep thinking separate from showing
+
+Milestone 1 has two kinds of code, kept strictly apart.
+
+**Thinking code** (`profile/`, `state/`) is plain maths and rules. It never
+touches the screen. That is why 38 new tests can check it in under a second,
+including rules that protect you: the calorie target is tried against dozens
+of body sizes to prove it never drops below a safe floor.
+
+**Showing code** (`ui/`) builds what you see and calls the thinking code for
+answers. It contains no formulas of its own.
+
+Three ideas worth remembering:
+
+1. **Lists beat long if-chains.** Onboarding is a list of steps. Each step
+   says what to show and whether you have answered enough. A small engine
+   walks the list. Adding a step is adding one entry, not rewiring a flow.
+2. **Never trust saved data.** `save.ts` checks and repairs every field on
+   every load, keeps a spare copy, and refuses files from a newer version
+   rather than damaging them. Phones lose power mid-write; files get edited.
+3. **One source of truth.** The app stores height and weight in metric only.
+   Feet and pounds are just a way of displaying them. Storing both would be
+   like keeping two sets of books: sooner or later they disagree.

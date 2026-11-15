@@ -26,6 +26,8 @@ export interface RunData {
   inferHistogram: Histogram;
   timeline: Timeline;
   firstInferMs: number | null;
+  /** Time for the blank-picture warm-up, if one ran this time. */
+  warmUpMs: number | null;
   trackerLoadMs: number;
   cameraOpenMs: number;
   camera: CameraInfo | null;
@@ -37,6 +39,7 @@ export interface RunData {
   worstGapMs: number;
   interruptions: number;
   wakeLock: string;
+  wakeLockError: string | null;
   errors: string[];
 }
 
@@ -72,7 +75,11 @@ export function buildReport(input: ReportInput): string {
   const { run, device, gpu } = input;
   const lines: string[] = [];
   lines.push('REPLING CAMERA CHECK · report v1');
-  lines.push(`Opened as: ${device.standalone ? 'Home Screen app (standalone)' : 'Safari tab'}`);
+  lines.push(
+    `Opened as: ${device.standalone ? 'Home Screen app (standalone)' : `${device.browser} tab`}${
+      !device.standalone && device.browser !== 'Safari' ? ' (for the Home Screen test, please use Safari)' : ''
+    }`,
+  );
   lines.push(`Device: ${device.userAgent}`);
   lines.push(
     `Screen: ${device.screen} @${device.pixelRatio}x · viewport ${device.viewport} · cores ${device.cores ?? '?'}`,
@@ -118,7 +125,9 @@ export function buildReport(input: ReportInput): string {
     lines.push('Think time: not enough looks to measure');
   }
   lines.push(
-    `First look (warm-up): ${run.firstInferMs === null ? 'n/a' : `${run.firstInferMs.toFixed(0)} ms`} · tracker load ${(
+    `Warm-up on a blank picture: ${
+      run.warmUpMs === null ? 'not run this time' : `${run.warmUpMs.toFixed(0)} ms`
+    } · first real look: ${run.firstInferMs === null ? 'n/a' : `${run.firstInferMs.toFixed(0)} ms`} · tracker load ${(
       run.trackerLoadMs / 1000
     ).toFixed(1)} s · camera start ${(run.cameraOpenMs / 1000).toFixed(1)} s`,
   );
@@ -139,7 +148,11 @@ export function buildReport(input: ReportInput): string {
       slow === null ? 'n/a (run 2+ minutes)' : `${slow >= 0 ? '+' : ''}${Math.round(slow * 100)}%`
     }`,
   );
-  lines.push(`Screen-awake lock: ${run.wakeLock} · interruptions: ${run.interruptions}`);
+  lines.push(
+    `Screen-awake lock: ${run.wakeLock}${run.wakeLockError ? ` (${run.wakeLockError})` : ''} · interruptions: ${
+      run.interruptions
+    }`,
+  );
 
   const buckets = run.timeline.list();
   if (buckets.length) {

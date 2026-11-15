@@ -5,6 +5,7 @@ import type { DeviceSummary } from '../src/platform/ios';
 
 const device: DeviceSummary = {
   userAgent: 'TestPhone',
+  browser: 'Safari',
   screen: '393x852',
   viewport: '393x759',
   pixelRatio: 3,
@@ -37,6 +38,7 @@ function sampleRun(seconds: number, ms: number): RunData {
     inferHistogram,
     timeline,
     firstInferMs: 180,
+    warmUpMs: 5200,
     trackerLoadMs: 2300,
     cameraOpenMs: 600,
     camera: { width: 480, height: 640, frameRate: 30, facing: 'user', label: 'Front Camera' },
@@ -48,6 +50,7 @@ function sampleRun(seconds: number, ms: number): RunData {
     worstGapMs: 80,
     interruptions: 0,
     wakeLock: 'active',
+    wakeLockError: null,
     errors: [],
   };
 }
@@ -89,6 +92,21 @@ describe('buildReport', () => {
     expect(text).toContain('detect failed: boom');
     expect(text).toContain('n/a (run 2+ minutes)');
     expect(text).toContain('Screen-awake lock supported: no');
+  });
+
+  it('names the browser and nudges towards Safari', () => {
+    const chrome = { ...device, standalone: false, browser: 'Chrome' };
+    const text = buildReport({ run: null, device: chrome, gpu: 'x', engineLog: [], wakeLockSupported: true });
+    expect(text).toContain('Opened as: Chrome tab (for the Home Screen test, please use Safari)');
+  });
+
+  it('shows why the screen-awake lock was refused', () => {
+    const run = sampleRun(20, 20);
+    run.wakeLock = 'refused';
+    run.wakeLockError = 'NotAllowedError: denied';
+    const text = buildReport({ run, device, gpu: 'x', engineLog: [], wakeLockSupported: true });
+    expect(text).toContain('Screen-awake lock: refused (NotAllowedError: denied)');
+    expect(text).toContain('Warm-up on a blank picture: 5200 ms · first real look: 180 ms');
   });
 
   it('never prints a false exact number when think time is off the scale', () => {

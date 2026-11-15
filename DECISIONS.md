@@ -125,6 +125,92 @@ changes fast, so I add it in M1 with proper versioning.
 10 times longer than normal. Mixing it into the average would make a healthy
 phone look slow.
 
+## D13. Budget locked from the real iPhone test
+
+**Result:** 15 looks per second, 19 ms average think time (22 ms for the
+slowest 5%), zero slowdown over 5 minutes, on iOS 26.7 with the GPU engine.
+
+**Choice:** keep the lite model, GPU, 640 x 480 and 15 looks per second. No
+background worker is needed (D7 stands): one stutter in 5 minutes, and that
+one was the warm-up.
+
+A 1-minute run from the Home Screen icon gave the same numbers, with the
+camera and the screen-awake lock both working there.
+
+**New rule from the tests:** the first look can take up to 6 seconds while
+the graphics chip sets itself up (6 s in Chrome, 0.3 s from the Home Screen).
+So the tracker is warmed up behind a loading screen and reused for the whole
+session, never restarted between sets.
+
+## D14. Save data lives in localStorage, with a spare copy
+
+**Choice:** one small JSON text in the browser's `localStorage`, plus a spare
+copy of the last save that loaded cleanly.
+
+**Why:** our data is tiny (about 500 bytes now, perhaps a few hundred KB after
+years of workouts). localStorage is the simplest storage there is and reads
+instantly at start-up. The alternative (IndexedDB) is built for large data and
+is much more complicated, with no benefit at this size.
+
+**Safety nets:** a version number with step-by-step upgrades, a check-and-
+repair pass on every load, the spare copy, a request to iOS to protect the
+data, and export/import of a backup file.
+
+## D15. Offline support: pages fresh from the network, files from the phone
+
+**Choice:** the service worker serves hashed files (code, styles, pictures)
+from the phone's cache, but always asks the network for the page itself
+first and falls back to the saved copy when offline.
+
+**Why:** the classic bug with offline apps is getting stuck on an old
+version. Asking for the page first means an online phone always sees the
+newest version, and an offline phone still opens. When a new version is
+found, the app reloads itself once. I simulated a deploy with a robot browser:
+the new version took over about 2.5 seconds after opening.
+
+The 17 MB tracking engine is downloaded in the background after onboarding,
+so the first workout does not wait for it and it works offline afterwards.
+
+## D16. Calorie maths: Mifflin-St Jeor and METs, kept gentle
+
+**Choice:**
+
+- Resting energy: Mifflin-St Jeor formula (the one dietitians most often use).
+- Daily need: resting energy times the standard activity multipliers
+  (1.2, 1.375, 1.55, 1.725).
+- One workout: MET x weight x hours, with session METs of 3.8, 5.0 and 6.5
+  for the three experience levels (from the Compendium of Physical Activities:
+  moderate calisthenics is 3.8, vigorous is 8.0, and sessions include rests).
+
+**Safety limits built into the code and tested:** a fat-loss target is at
+most 15% or 500 kcal below need, never below resting energy, and never a
+deficit for anyone under 18. Numbers are rounded to the nearest 10 so they do
+not pretend to be exact. No BMI is shown, to avoid body-shaming.
+
+## D17. A "yes" on the health check advises, it does not lock the door
+
+**Choice:** any "yes" shows "please check with a doctor first" and needs a
+tick to continue. The plan then starts one level gentler.
+
+**Why:** this is how the standard gym screening form (PAR-Q) works. Blocking
+people entirely would push them to lie on the form, which is less safe.
+
+## D18. Pip is the coach
+
+**Choice:** the mascot from the icon is named Pip and guides the app with
+speech bubbles and four expressions. Pets in the garden world (M4) will be
+separate creatures.
+
+## D19. Light and dark themes, following the phone by default
+
+**Choice:** three settings: Auto, Light, Dark. Colours are defined once as
+named variables, so a theme is just a second set of values.
+
+## D20. No tabs for features that do not exist yet
+
+**Choice:** the tab bar shows only Today and Me. World and Progress appear
+when they are real. An honest "In the workshop" card shows what is coming.
+
 ---
 
 ## Points economy table
