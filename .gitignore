@@ -1,0 +1,7 @@
+node_modules
+dist
+# The tracking engine (WebAssembly) is copied from node_modules at build time
+# by scripts/copy-wasm.mjs, so we don't store 11 MB of it in git.
+public/wasm
+.DS_Store
+*.local

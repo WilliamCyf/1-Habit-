@@ -1,0 +1,16 @@
+{
+  "name": "Repling",
+  "short_name": "Repling",
+  "description": "A home workout coach that counts real reps with your camera. Your reps feed a little pet and garden.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1512",
+  "theme_color": "#0d1512",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png" }
+  ]
+}

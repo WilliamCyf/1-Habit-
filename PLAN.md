@@ -1,0 +1,160 @@
+# Repling: the plan
+
+**Repling** is a no-equipment home workout coach for iPhone. The camera counts
+every rep, so reps cannot be typed in or faked. Verified reps are the only way
+to earn points, and points keep a little pet and garden alive.
+
+This file is the map. Read the "Where we are" box first.
+
+> **Where we are:** Milestone 0 (camera check) is built and waiting for your
+> iPhone test. Nothing else gets built until your results are in.
+
+---
+
+## 1. What I checked before writing any code (November 2026)
+
+You asked me not to assume. Here is what I verified, and what it means for us.
+
+| Question | What I found | What we do about it |
+| --- | --- | --- |
+| Which iOS versions do we target? | iOS 27 is current (released September 2026). iOS 26 is the previous one. | Build and test for 27 and 26. |
+| Does the camera work in a Home Screen app? | Yes. But iOS may ask for camera permission again each time the app is opened, because Apple does not let Home Screen apps "remember" it. | Design the camera screen so a repeat permission pop-up feels normal. You will test this in Step 0. |
+| Is there an automatic "Install app" prompt? | No. iOS has none. Since iOS 26, any site added to the Home Screen opens as an app by default. | An in-app "Add to Home Screen" guide. |
+| Can we stop the screen from sleeping mid-set? | Yes, the Screen Wake Lock works in Safari, and in Home Screen apps since iOS 18.4. | Use it, with a fallback tip about Auto-Lock. |
+| Can we lock the screen to landscape? | No. iOS ignores that setting. | The app must look right in both portrait and landscape. |
+| Which body-tracking library? | Google's MediaPipe Pose Landmarker is actively maintained (new release this week). The main rival (TensorFlow.js MoveNet) has had no library update since 2023. | Use MediaPipe. Details in DECISIONS.md. |
+| Does the library phone home? | **Yes, the newest versions (1.x) send usage statistics to Google.** Version 0.10.35 does not. I checked the code of both. | Use 0.10.35, and add a browser lock (CSP) that blocks every outside connection. |
+| Any known iOS 27 camera bugs? | An iOS 27 beta crashed when a live camera view was hidden while another video played. Apple fixed it before release. | Never hide a live camera view. Turn the camera fully off instead. |
+
+Sources are listed at the bottom of DECISIONS.md.
+
+---
+
+## 2. How the app is put together
+
+Think of the app as a small company with departments. Each folder is one
+department with one job, and they pass work to each other in one direction.
+
+```
+ Camera ──▶ Pose tracker ──▶ Exercise detector ──▶ Verified reps
+ (video)    (33 body dots)   (counts + scores)          │
+                                                        ▼
+        Plan engine ◀── results ─── Workout session ──▶ Points ledger
+        (what to do today)                              (tamper-evident)
+                                                        │
+                                                        ▼
+                                        Shop ──▶ Pet and garden world
+```
+
+| Folder | Its one job | Status |
+| --- | --- | --- |
+| `src/pose/` | Camera on/off, run the pose model, draw the skeleton, joint-angle maths | **Built (M0)** |
+| `src/perf/` | Measure speed, pace the frames, later the heat governor | **Started (M0)** |
+| `src/platform/` | iPhone quirks: Home Screen mode, wake lock, storage, sound unlock | **Started (M0)** |
+| `src/diag/` | The camera-check page (stays forever as the hidden debug page) | **Built (M0)** |
+| `src/ui/` | Screens, navigation, animations, the coach character | M1 |
+| `src/profile/` | Your details, calorie estimates, limits | M1 |
+| `src/detectors/` | One rep counter per exercise, plus anti-cheat checks | M2, M3 |
+| `src/plan/` | The coach: weekly plan, progression, deload, auto-adjust | M3 |
+| `src/economy/` | Points rules, the ledger, daily cap, streaks, quests | M4 |
+| `src/world/` | Pet, garden, shop | M4 |
+| `tests/` | Automated checks, including fake "cheater" recordings | every milestone |
+
+Two rules keep this clean:
+
+1. **Only one door creates points.** Points can only be made by the workout
+   session code after a detector verifies a rep. No other code can add points.
+2. **Thinking code is separate from screen code.** Detectors, the plan engine
+   and the economy are plain maths with no screen parts, so they can be tested
+   automatically on a computer in milliseconds.
+
+---
+
+## 3. Milestones
+
+Each milestone ends with a live link, a short lesson, an iPhone checklist, and
+then I wait for your feedback.
+
+| # | Milestone | Done when |
+| --- | --- | --- |
+| **M0** | **Camera check (now)** | You confirm tracking is smooth and the phone stays reasonably cool. Your numbers set the budget in section 4. |
+| M1 | App shell, onboarding, profile, install | You can install it, complete the health check and profile, see calorie estimates, and it works offline. |
+| M2 | Push-up detector, anti-cheat v1, camera screen | Real push-ups count, fake ones do not, and the test harness proves it. |
+| M3 | Plan engine and the other exercises | A 4-week plan appears, every exercise has a demo and a reliable counter. |
+| M4 | Points, shop, pet and garden | Reps earn points, points feed the pet and grow the garden. |
+| M5 | Polish: sound, share cards, progress, achievements | It feels like a studio-made app. |
+| M6 | Speed and heat hardening | 15-minute workout: smooth, cool enough, no bugs. |
+
+### Exercises I expect to track reliably (final list decided by testing in M3)
+
+Side-on camera: push-up family (knee, standard, wide, diamond), squat, reverse
+lunge, glute bridge, sit-up, plank, mountain climbers, burpee, superman,
+bird-dog. Front-on camera: jumping jacks, high knees, side plank.
+
+Reverse snow angels are a "maybe": lying face-down, the arms hide behind the
+body from a side view. If testing shows the count is unreliable, it is left
+out, as you asked.
+
+### Anti-cheat layers (built in M2 and M4)
+
+1. Live camera only. There is no upload button and no "+1" button anywhere.
+2. A "get in position" gate: the set starts only when the right start pose is seen.
+3. Full range of motion, straight body line, minimum tempo, realistic rep speed.
+4. Scene-motion check: if every body dot moves together, the phone is moving, not you.
+5. Stillness check: jitter while standing still never crosses both thresholds.
+6. Random friendly coach check-ins between sets ("wave your left hand").
+7. Points ledger stored as a hash chain, so edited save data is detected.
+8. Daily points cap, so grinding and overtraining are not rewarded.
+9. A test harness that replays fake cheating recordings and proves they fail.
+
+Honest limit, stated now: with no server, a determined programmer can always
+cheat their own phone. The goal is to make cheating harder than doing the push-ups.
+
+---
+
+## 4. Speed and heat budget (starting numbers)
+
+These are the starting targets. Your Step 0 results will adjust them.
+
+| Item | Starting budget |
+| --- | --- |
+| Looks per second (pose checks) | 15, dropping to 10 if the phone struggles |
+| Camera picture size | 640 x 480 or smaller |
+| Think time per look | under 40 ms for 95% of looks |
+| Slowdown from heat after 5 minutes | under 15% |
+| Camera on | only during active sets. Off in rests, menus and the pet world |
+| App code size | under 300 KB (not counting the tracking engine and model) |
+| Animations | only "transform" and "opacity" (the cheap kind) |
+| Background timers | none. Pet needs are calculated from the clock when you open the app |
+
+How your results change the plan:
+
+| If Step 0 shows... | Then we... |
+| --- | --- |
+| Think time around 25 ms or less, slowdown under 15%, phone just warm | Keep 15 looks per second, lite model, 640 picture. |
+| Think time 25 to 45 ms, or the phone gets hot | Drop to 10 looks per second and a 480 picture. |
+| The GPU engine fails and it falls back to CPU | Use the CPU numbers. Probably 10 looks per second. |
+| Think time over 60 ms even on the lightest settings | Move tracking to a background worker and shrink the input. Worst case, rethink the model. |
+
+---
+
+## 5. Risks and what I will do about them
+
+| Risk | How likely | Plan |
+| --- | --- | --- |
+| Tracking too slow or too hot on your iPhone | Unknown until you test | This is why Step 0 exists. Fallbacks are in the table above. |
+| iOS asks for camera permission on every launch | Likely in Home Screen mode | Friendly pre-permission screen, and the camera opens only when a set starts. |
+| I cannot run an iPhone myself | Certain | Every milestone has a checklist, and the debug page produces a copy-paste report. I test everything else in a real browser with a fake camera. |
+| iOS deletes saved data (it can, for unused sites) | Low for Home Screen apps | Ask for persistent storage, versioned saves, export/import backup. |
+| Side-on push-ups hide half the body | Certain | Measure the side the camera sees best. Already built in `geometry.ts`. |
+| A rep counter miscounts | Certain at first | Hysteresis, smoothing, and synthetic test recordings for every counter. |
+| Scope is large | Certain | Strict milestones. Nothing is left broken between them. |
+
+---
+
+## 6. How we work together
+
+- I make the decisions and write each big one, with the reason, in DECISIONS.md.
+- Every new technical word is explained once, and added to LEARNING.md.
+- After each milestone you get: what was built, a short lesson, a test checklist.
+- Bugs are fixed before new features are added.

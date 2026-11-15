@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Repling · Camera check</title>
+    <meta name="description" content="Checks how well body tracking runs on this iPhone. Nothing is recorded or uploaded." />
+    <meta name="theme-color" content="#0d1512" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Repling" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="stylesheet" href="./src/styles/base.css" />
+    <link rel="stylesheet" href="./src/diag/diag.css" />
+  </head>
+  <body>
+    <main id="app" data-state="idle">
+      <header class="top">
+        <a class="brand" href="./" aria-label="Back to Repling home">
+          <img src="./icons/mascot.svg" alt="" width="40" height="40" />
+          <span>
+            <strong>Camera check</strong>
+            <small>Repling · Step 0</small>
+          </span>
+        </a>
+        <span id="mode-chip" class="chip">Safari tab</span>
+      </header>
+
+      <div class="layout">
+        <section class="stage-col">
+          <div id="stage" class="stage">
+            <video id="video" playsinline muted></video>
+            <canvas id="overlay"></canvas>
+
+            <div id="hud" class="hud" hidden>
+              <div class="hud-main">
+                <span id="hud-fps" class="hud-fps">0</span>
+                <span class="hud-unit">looks<br />per sec</span>
+              </div>
+              <div id="hud-ms" class="hud-sub">0 ms</div>
+            </div>
+            <div id="body-chip" class="body-chip" hidden>Step back: whole body not in view</div>
+
+            <div id="intro" class="intro">
+              <img src="./icons/mascot.svg" alt="" width="84" height="84" />
+              <h2 id="intro-title">Let’s test your camera</h2>
+              <p class="privacy">
+                <strong>Your video never leaves this phone.</strong> Nothing is recorded, saved or uploaded. This page
+                is locked so it cannot talk to any other server.
+              </p>
+            </div>
+
+            <div id="busy" class="busy" hidden>
+              <div class="spinner" aria-hidden="true"></div>
+              <p id="busy-text">Starting…</p>
+            </div>
+          </div>
+
+          <div class="run-row">
+            <button id="main-btn" class="btn" type="button">Start camera test</button>
+            <div class="timer" aria-label="Test time">
+              <span id="timer-text">0:00</span>
+              <span class="timer-goal">/ 5:00</span>
+            </div>
+          </div>
+          <div class="progress" aria-hidden="true"><div id="progress-bar"></div></div>
+          <p id="error-box" class="error-box" role="alert" hidden></p>
+        </section>
+
+        <section class="panel-col">
+          <div class="cards">
+            <div class="card">
+              <span class="label">Tracking speed</span>
+              <span id="m-fps" class="value">–</span>
+              <span id="m-fps-sub" class="sub">looks per second</span>
+            </div>
+            <div class="card">
+              <span class="label">Think time</span>
+              <span id="m-ms" class="value">–</span>
+              <span id="m-ms-sub" class="sub">per look</span>
+            </div>
+            <div class="card">
+              <span class="label">Camera</span>
+              <span id="m-cam" class="value small">–</span>
+              <span id="m-cam-sub" class="sub">picture size</span>
+            </div>
+            <div class="card">
+              <span class="label">Engine</span>
+              <span id="m-engine" class="value small">–</span>
+              <span id="m-engine-sub" class="sub">GPU is the fast one</span>
+            </div>
+            <div class="card">
+              <span class="label">Screen smoothness</span>
+              <span id="m-screen" class="value small">–</span>
+              <span id="m-screen-sub" class="sub">0 stutters</span>
+            </div>
+            <div class="card">
+              <span class="label">Body seen</span>
+              <span id="m-body" class="value small">–</span>
+              <span id="m-body-sub" class="sub">of looks found you</span>
+            </div>
+            <div class="card">
+              <span class="label">Joint angles</span>
+              <span id="m-angles" class="value small">–</span>
+              <span id="m-angles-sub" class="sub">elbow · knee</span>
+            </div>
+            <div class="card">
+              <span class="label">Heat slowdown</span>
+              <span id="m-heat" class="value small">–</span>
+              <span id="m-heat-sub" class="sub">needs 2+ minutes</span>
+            </div>
+          </div>
+
+          <details class="advanced">
+            <summary>Advanced settings</summary>
+            <fieldset id="settings">
+              <legend class="sr-only">Test settings</legend>
+              <div class="seg-row">
+                <span class="seg-label">Model</span>
+                <div class="seg">
+                  <label><input type="radio" name="model" value="lite" checked /><span>Lite</span></label>
+                  <label><input type="radio" name="model" value="full" /><span>Full</span></label>
+                </div>
+              </div>
+              <div class="seg-row">
+                <span class="seg-label">Engine</span>
+                <div class="seg">
+                  <label><input type="radio" name="delegate" value="GPU" checked /><span>GPU</span></label>
+                  <label><input type="radio" name="delegate" value="CPU" /><span>CPU</span></label>
+                </div>
+              </div>
+              <div class="seg-row">
+                <span class="seg-label">Picture</span>
+                <div class="seg">
+                  <label><input type="radio" name="res" value="640x480" checked /><span>640</span></label>
+                  <label><input type="radio" name="res" value="480x360" /><span>480</span></label>
+                  <label><input type="radio" name="res" value="320x240" /><span>320</span></label>
+                </div>
+              </div>
+              <div class="seg-row">
+                <span class="seg-label">Looks/sec</span>
+                <div class="seg">
+                  <label><input type="radio" name="rate" value="10" /><span>10</span></label>
+                  <label><input type="radio" name="rate" value="15" checked /><span>15</span></label>
+                  <label><input type="radio" name="rate" value="30" /><span>Max</span></label>
+                </div>
+              </div>
+              <div class="seg-row">
+                <span class="seg-label">Camera</span>
+                <div class="seg">
+                  <label><input type="radio" name="facing" value="user" checked /><span>Front</span></label>
+                  <label><input type="radio" name="facing" value="environment" /><span>Back</span></label>
+                </div>
+              </div>
+              <p class="hint">Stop the test to change settings. Leave these alone for the standard test.</p>
+            </fieldset>
+          </details>
+
+          <section class="report">
+            <h3>Report for Claude</h3>
+            <p class="hint">After the test, tap Copy and paste the text into our chat.</p>
+            <div class="report-actions">
+              <button id="copy-btn" class="btn secondary" type="button">Copy report</button>
+              <button id="share-btn" class="btn secondary" type="button">Share</button>
+            </div>
+            <textarea id="report-text" readonly rows="8" aria-label="Diagnostics report" spellcheck="false"></textarea>
+          </section>
+        </section>
+      </div>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="./src/diag/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Repling</title>
+    <meta name="description" content="A home workout coach that counts real reps with your camera. Your reps feed a little pet and garden." />
+    <meta name="theme-color" content="#0d1512" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Repling" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta property="og:title" content="Repling" />
+    <meta property="og:description" content="Real reps, counted by your camera, grow a little world." />
+    <meta property="og:type" content="website" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <link rel="stylesheet" href="./src/styles/base.css" />
+    <link rel="stylesheet" href="./src/home/home.css" />
+  </head>
+  <body>
+    <main class="home">
+      <img class="mascot" src="./icons/mascot.svg" alt="Repling mascot: a small green sprout creature wearing a sweatband" width="168" height="168" />
+      <h1>Repling</h1>
+      <p class="tagline">Real reps grow a little world.</p>
+
+      <section class="step-card">
+        <span class="step-tag">Step 0 · Camera check</span>
+        <p>
+          Before the full app is built, we test the hardest part first: can your iPhone track your body smoothly
+          without getting hot?
+        </p>
+        <a class="btn" href="./diag.html">Open the camera check</a>
+        <p class="fine">Your video never leaves this phone. Nothing is recorded or uploaded.</p>
+      </section>
+
+      <section id="install" class="install">
+        <h2>Put Repling on your Home Screen</h2>
+        <ol>
+          <li>Open this page in <strong>Safari</strong>.</li>
+          <li>Tap the <strong>Share</strong> button (the square with an arrow pointing up).</li>
+          <li>Scroll down and tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.</li>
+        </ol>
+      </section>
+      <p id="installed" class="installed" hidden>Running from your Home Screen ✓</p>
+    </main>
+    <script type="module" src="./src/home/main.ts"></script>
+  </body>
+</html>

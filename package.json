@@ -1,0 +1,25 @@
+{
+  "name": "repling",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Repling — a camera-verified home workout coach with a pet and garden. iPhone PWA.",
+  "scripts": {
+    "copy-wasm": "node scripts/copy-wasm.mjs",
+    "predev": "npm run copy-wasm",
+    "dev": "vite",
+    "prebuild": "npm run copy-wasm",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.35"
+  }
+}
