@@ -6,9 +6,15 @@ to earn points, and points keep a little pet and garden alive.
 
 This file is the map. Read the "Where we are" box first.
 
-> **Where we are:** Milestone 0 passed on a real iPhone. Milestone 1 (app
-> shell, onboarding, profile, offline, install) is built and waiting for your
-> test. Next up is Milestone 2: the push-up counter.
+> **Where we are:** Milestones 0 to 2 are built and live. You asked me to
+> keep building without waiting for a test after each milestone, so I am
+> continuing with Milestone 3 (the plan engine and more exercises).
+>
+> **Only a real iPhone can confirm these, whenever you have a moment:**
+> 1. Do real push-ups count correctly? (Today → Start. Tap the big number
+>    five times to see live angles if something seems off.)
+> 2. Does the coach's voice play nicely with your music? (Camera check →
+>    Sound check.)
 
 ---
 
@@ -82,9 +88,9 @@ then I wait for your feedback.
 | # | Milestone | Done when |
 | --- | --- | --- |
 | M0 | Camera check | **Passed.** 15 looks per second, 19 ms think time, no heat slowdown in 5 minutes. |
-| **M1** | **App shell, onboarding, profile, install (now)** | You can install it, complete the health check and profile, see calorie estimates, and it works offline. |
-| M2 | Push-up detector, anti-cheat v1, camera screen | Real push-ups count, fake ones do not, and the test harness proves it. |
-| M3 | Plan engine and the other exercises | A 4-week plan appears, every exercise has a demo and a reliable counter. |
+| M1 | App shell, onboarding, profile, install | **Built.** Setup, health check, calorie estimates, offline, backups. |
+| M2 | Push-up detector, anti-cheat v1, camera screen, voice coach | **Built.** 34 replayed recordings prove honest reps count and fakes do not. Needs a real-body check. |
+| **M3** | **Plan engine and the other exercises (now)** | A 4-week plan appears, every exercise has a demo and a reliable counter. |
 | M4 | Points, shop, pet and garden | Reps earn points, points feed the pet and grow the garden. |
 | M5 | Polish: sound, share cards, progress, achievements | It feels like a studio-made app. |
 | M6 | Speed and heat hardening | 15-minute workout: smooth, cool enough, no bugs. |

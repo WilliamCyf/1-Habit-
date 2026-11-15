@@ -223,6 +223,31 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 - **Unlocking audio:** iOS only lets a page make sound after you tap
   something, so the app prepares its sound engine inside a tap.
 
+### Counting reps (Milestone 2)
+
+- **State machine:** a system that is always in exactly one named state and
+  moves between states by fixed rules. A turnstile: locked → unlocked →
+  locked. The push-up counter is top → going down → bottom → top.
+- **Threshold:** a line a measurement must cross to trigger something.
+- **Hysteresis:** using two different thresholds, one for going down and one
+  for coming up, with a gap between. A heating thermostat does this: on below
+  19°, off above 21°, so it does not click on and off around 20°.
+- **Feature:** a useful number worked out from raw data. From 33 dots we work
+  out a handful of features: elbow angle, body-line angle, tilt.
+- **Exponential moving average:** a simple smoother. Each new value moves the
+  smoothed value part of the way. A shock absorber for numbers.
+- **Synthetic data:** made-up test data. We generate fake push-ups (and fake
+  cheats) from a geometric model of a body, because the tests cannot film a
+  real person.
+- **Test harness:** the scaffolding that replays recordings into the code
+  and checks the outcome.
+- **Governor:** a part that automatically limits speed to stay safe. Ours
+  lowers the tracking rate if the phone slows down.
+- **Queue:** things waiting their turn. The coach's speech queue is unusual:
+  it holds one item and throws stale ones away.
+- **Callback:** a function you hand to other code, saying "call this when
+  something happens". The set controller tells the screen about reps this way.
+
 ### Tools
 
 - **npm:** the app store for code libraries. `npm install` downloads them.
@@ -298,3 +323,39 @@ Three ideas worth remembering:
 3. **One source of truth.** The app stores height and weight in metric only.
    Feet and pounds are just a way of displaying them. Storing both would be
    like keeping two sets of books: sooner or later they disagree.
+
+### Lesson 2: how the push-up counter thinks
+
+Open `src/detectors/pushup.ts`. Three ideas carry the whole thing.
+
+**1. Turn pictures into a few numbers.** Each look gives 33 dots. The counter
+only needs a handful of numbers from them, mainly the elbow angle (how bent
+the arm is) and the body-line angle (how straight shoulder–hip–ankle is).
+
+**2. A turnstile with a gap.** The counter clicks once per journey: arms
+straight, down to a deep bend, back to straight. "Deep" means 100° or less
+and "straight" means 150° or more. The 50° gap between them is the trick. A
+shaky reading wobbling around one number cannot click twice, because it would
+have to travel the whole gap.
+
+**3. Evidence before a verdict.** While a rep is in progress, the counter
+collects evidence: how deep, how long, how straight, did the shoulder really
+drop, did the hands stay put. Only when the arms are straight again does it
+judge, and it either counts the rep with a score or rejects it with a reason.
+
+Speed of one rep is checked the simple way:
+
+```
+                    distance travelled (one full rep)
+  time per rep  =  ────────────────────────────────────
+                              your speed
+```
+
+You cannot change the distance, so a rep that finishes in under half a second
+means it was not a full rep (or it was a bounce).
+
+**Why I trust it without filming anyone:** `tests/pushup.test.ts` plays 34
+recordings into the counter. Honest ones must count exactly, at 10, 15 and 30
+looks per second, with jitter, facing either way. Every kind of fake must
+score zero. If a future change breaks any of that, the tests fail and the
+app is not published.

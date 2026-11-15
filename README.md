@@ -4,7 +4,7 @@ A no-equipment home workout coach for iPhone. The camera counts every rep, so
 reps cannot be faked. Verified reps earn points, and points keep a little pet
 and garden alive.
 
-**Status:** Milestone 1 of 6. See [PLAN.md](PLAN.md) for the road ahead.
+**Status:** Milestone 2 of 6. See [PLAN.md](PLAN.md) for the road ahead.
 
 What works today:
 
@@ -12,9 +12,11 @@ What works today:
 - Installs to the Home Screen and opens without internet
 - Light and dark themes, metric and imperial units
 - Backup export and import
-- The camera check (body tracking diagnostics)
+- Camera-counted push-ups (knee or toes, detected automatically) with a form score
+- A voice coach that counts out loud, so you do not need to see the screen
+- The camera check (tracking and sound diagnostics)
 
-Not built yet: rep counting, workout plans, points, the pet and garden.
+Not built yet: other exercises, workout plans, points, the pet and garden.
 
 **Live link:** https://williamcyf.github.io/1-Habit-/
 
@@ -104,8 +106,17 @@ Then open the address it prints. The camera works on `localhost` without https.
 
 Repling has no server. Everything, including the points, lives on your phone.
 
-**What it is designed to stop:** typing in reps, half reps, bouncing, waving
-an arm at the camera, shaking the phone, and casual edits to the saved data.
+**What is built and tested so far (push-ups):** there is no way to type in
+reps. A set only starts from a held start position. Half reps, bouncing,
+sagging or piked hips, standing and waving an arm, lying down and bending one
+arm, shaking or sliding the phone, and a second person walking in are all
+rejected. Each of these is replayed as a fake recording in the automated tests.
+
+**Known gap today:** pointing the phone at a video of someone else doing
+push-ups would fool it. Random coach check-ins between sets are planned to
+close most of that gap.
+
+**Still to come:** a tamper-evident points record and a daily points cap.
 
 **What it cannot stop:** a determined programmer who rewrites the app's code
 on their own device, or someone who builds a custom rig to fool the camera.
@@ -113,8 +124,7 @@ No app without a server can stop that.
 
 The aim is simple: make cheating harder than doing the push-ups.
 
-(The anti-cheat is built in Milestones 2 and 4. This section will be updated
-with exactly what was built and tested.)
+(This section is updated as each layer is built.)
 
 ---
 

@@ -977,3 +977,479 @@ h3 {
     font-size: 13px;
   }
 }
+
+/* ---------- workout entry card and intro sheet ---------- */
+
+.workout-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: linear-gradient(140deg, var(--accent-soft), transparent 75%), var(--surface);
+}
+
+.workout-card > small {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.workout-card > strong {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.workout-card .btn {
+  margin-top: 6px;
+}
+
+.demo-card {
+  padding: 10px;
+  color: var(--text);
+  line-height: 0;
+}
+
+.demo-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 320 / 150;
+}
+
+.target-line {
+  text-align: center;
+  color: var(--muted);
+}
+
+.target-line strong {
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.tips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* ---------- the camera workout screen ---------- */
+/* Always dark, whatever the theme: a dark frame makes the camera picture
+   and the big white numbers easiest to see from across the room. */
+
+.workout {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  background: #060a08;
+  color: #eef6f0;
+  --text: #eef6f0;
+  --muted: #9fb3a8;
+  --surface: #16211c;
+  --surface-2: #1f2e27;
+  --line: #2b3d34;
+  --accent: #7cf2b0;
+  --accent-soft: rgba(124, 242, 176, 0.13);
+  --bg: #0d1512;
+}
+
+.wk-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.wk-frame {
+  position: relative;
+  flex: none;
+  /* Sized from JavaScript to fit the camera picture without cropping. */
+  width: 100%;
+  height: 100%;
+}
+
+.wk-video,
+.wk-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.wk-frame.mirror .wk-video,
+.wk-frame.mirror .wk-canvas {
+  transform: scaleX(-1);
+}
+
+/* The camera is off in these phases. (Never "display: none" on a video.) */
+.workout[data-phase='loading'] .wk-video,
+.workout[data-phase='paused'] .wk-video {
+  visibility: hidden;
+}
+
+.wk-count {
+  position: absolute;
+  top: calc(var(--safe-top) + 10px);
+  left: calc(var(--safe-left) + 14px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 112px;
+  padding: 6px 16px 10px;
+  border-radius: 24px;
+  background: rgba(6, 10, 8, 0.72);
+  font-variant-numeric: tabular-nums;
+}
+
+.wk-count-num {
+  font-size: 92px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.wk-count-of {
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.workout:not([data-phase='active']):not([data-phase='countdown']) .wk-count,
+.workout:not([data-phase='active']) .wk-pip {
+  display: none;
+}
+
+.wk-pip {
+  position: absolute;
+  top: calc(var(--safe-top) + 14px);
+  right: calc(var(--safe-right) + 72px);
+  line-height: 0;
+}
+
+.wk-close {
+  position: absolute;
+  top: calc(var(--safe-top) + 10px);
+  right: calc(var(--safe-right) + 12px);
+  background: rgba(6, 10, 8, 0.72);
+  color: #eef6f0;
+}
+
+.wk-cue {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 112px);
+  max-width: 88%;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: #ffd166;
+  color: #2b2000;
+  font-size: 26px;
+  font-weight: 800;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, 14px) scale(0.94);
+  transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+  pointer-events: none;
+}
+
+.wk-cue[data-tone='good'] {
+  background: var(--accent);
+  color: #06281a;
+}
+
+.wk-cue.show {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.wk-big {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: -90px 0 0 -110px;
+  width: 220px;
+  height: 180px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 130px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 6px 30px rgba(0, 0, 0, 0.6);
+}
+
+.wk-big.show {
+  display: flex;
+}
+
+.wk-card {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 108px);
+  width: min(92%, 400px);
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: rgba(13, 21, 18, 0.9);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.wk-card > strong {
+  font-size: 21px;
+}
+
+.workout[data-phase='loading'] .wk-loading,
+.workout[data-phase='position'] .wk-position,
+.workout[data-phase='paused'] .wk-paused {
+  display: flex;
+}
+
+.wk-loading,
+.wk-paused {
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  text-align: center;
+}
+
+.wk-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 4px solid var(--line);
+  border-top-color: var(--accent);
+  animation: wk-spin 0.9s linear infinite;
+}
+
+@keyframes wk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.wk-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.wk-checks li {
+  position: relative;
+  padding-left: 30px;
+  color: var(--muted);
+}
+
+.wk-checks li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.wk-checks li.ok {
+  color: var(--text);
+}
+
+.wk-checks li.ok::before {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.wk-hold {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.wk-hold-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.12s linear;
+}
+
+.wk-hint {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.wk-light {
+  display: none;
+  color: #ffd166;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.wk-light.show {
+  display: block;
+}
+
+.wk-stop {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 16px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(86%, 340px);
+  min-height: 76px;
+  border: 0;
+  border-radius: 26px;
+  background: #ff7a6b;
+  color: #3a0d07;
+  cursor: pointer;
+}
+
+.wk-stop strong {
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.wk-stop small {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.wk-stop:active {
+  transform: translateX(-50%) scale(0.97);
+}
+
+.wk-debug {
+  position: absolute;
+  top: calc(var(--safe-top) + 150px);
+  left: calc(var(--safe-left) + 14px);
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(6, 10, 8, 0.8);
+  color: #cfe;
+  font: 12px/1.35 ui-monospace, Menlo, monospace;
+  pointer-events: none;
+}
+
+.wk-debug[hidden] {
+  display: none;
+}
+
+.wk-summary {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 22px) calc(var(--safe-right) + 18px) calc(var(--safe-bottom) + 22px) calc(var(--safe-left) + 18px);
+  text-align: center;
+}
+
+.wk-summary h2 {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.wk-summary-pip {
+  line-height: 0;
+  animation: bob 3.2s ease-in-out infinite;
+}
+
+.wk-summary-reps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wk-summary-reps strong {
+  font-size: 96px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.wk-summary-reps span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.wk-summary .stat,
+.wk-summary .card {
+  text-align: left;
+}
+
+.wk-reason {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.wk-reason small {
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+/* Sideways phone: counter stays top-left, Stop moves to the right edge so
+   it does not cover the body. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .wk-count-num {
+    font-size: 72px;
+  }
+
+  .wk-stop {
+    left: auto;
+    right: calc(var(--safe-right) + 14px);
+    bottom: calc(var(--safe-bottom) + 14px);
+    transform: none;
+    width: 150px;
+    min-height: 70px;
+  }
+
+  .wk-stop:active {
+    transform: scale(0.97);
+  }
+
+  .wk-cue {
+    bottom: calc(var(--safe-bottom) + 18px);
+    max-width: 60%;
+  }
+
+  .wk-card {
+    bottom: calc(var(--safe-bottom) + 14px);
+    left: calc(var(--safe-left) + 14px);
+    transform: none;
+    width: min(56%, 380px);
+  }
+
+  .wk-loading,
+  .wk-paused {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}

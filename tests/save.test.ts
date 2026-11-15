@@ -49,7 +49,8 @@ describe('save round trip', () => {
     const s = newSave(NOW);
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.onboardingDone).toBe(false);
-    expect(s.settings).toEqual({ units: 'metric', theme: 'system', sound: true, voice: false });
+    expect(s.settings).toEqual({ units: 'metric', theme: 'system', sound: true, voice: true });
+    expect(s.history).toEqual([]);
   });
 });
 
@@ -66,7 +67,7 @@ describe('damaged or edited saves', () => {
   });
 
   it('repairs missing sections with defaults', () => {
-    const result = loadSave(JSON.stringify({ version: 1 }), NOW);
+    const result = loadSave(JSON.stringify({ version: 2 }), NOW);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data).toEqual(newSave(NOW));
   });
@@ -91,13 +92,63 @@ describe('damaged or edited saves', () => {
 
   it('ignores unknown settings and strips unknown limits', () => {
     const odd = {
-      version: 1,
+      version: 2,
       settings: { units: 'furlongs', theme: 'neon', sound: 'loud' },
       draft: { limits: ['wrists', 'elbows'], age: 'old', weightKg: 70 },
     };
     const data = sanitise(odd, NOW);
-    expect(data.settings).toEqual({ units: 'metric', theme: 'system', sound: true, voice: false });
+    expect(data.settings).toEqual({ units: 'metric', theme: 'system', sound: true, voice: true });
     expect(data.draft).toEqual({ limits: ['wrists'], weightKg: 70 });
+  });
+});
+
+describe('real upgrade: version 1 to version 2', () => {
+  it('keeps the profile, adds an empty history, and switches the voice coach on', () => {
+    const v1 = {
+      version: 1,
+      createdAt: NOW.toISOString(),
+      updatedAt: NOW.toISOString(),
+      onboardingDone: true,
+      onboardingStep: 0,
+      health: { answeredAt: NOW.toISOString(), answers: [false], anyYes: false, acknowledged: true },
+      profile,
+      draft: {},
+      settings: { units: 'imperial', theme: 'dark', sound: false, voice: false },
+    };
+    const result = loadSave(JSON.stringify(v1), NOW);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.version).toBe(2);
+    expect(result.data.profile).toEqual(profile);
+    expect(result.data.onboardingDone).toBe(true);
+    expect(result.data.history).toEqual([]);
+    expect(result.data.settings).toEqual({ units: 'imperial', theme: 'dark', sound: false, voice: true });
+  });
+});
+
+describe('workout history', () => {
+  const set = { at: NOW.toISOString(), exercise: 'pushup', variant: 'standard', reps: 8, target: 8, avgScore: 88, bestScore: 96, rejected: 1, durationMs: 21000 };
+
+  it('survives a round trip', () => {
+    const save = { ...finishedSave(), history: [set] };
+    const result = loadSave(serialise(save), NOW);
+    expect(result.ok && result.data.history).toEqual([set]);
+  });
+
+  it('drops broken entries and clamps silly numbers', () => {
+    const save = {
+      ...finishedSave(),
+      history: [set, { at: 'not a date', reps: 5 }, 'junk', { ...set, reps: 9_999_999, avgScore: 250, rejected: -4 }],
+    };
+    const data = sanitise(save as unknown as Record<string, unknown>, NOW);
+    expect(data.history).toHaveLength(2);
+    expect(data.history[1]).toMatchObject({ reps: 1000, avgScore: 100, rejected: 0 });
+  });
+
+  it('keeps only the newest entries when the list is huge', () => {
+    const many = Array.from({ length: 3200 }, (_, i) => ({ ...set, reps: i % 50 }));
+    const data = sanitise({ ...finishedSave(), history: many } as unknown as Record<string, unknown>, NOW);
+    expect(data.history).toHaveLength(3000);
   });
 });
 

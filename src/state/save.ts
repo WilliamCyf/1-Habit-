@@ -12,7 +12,7 @@
 import { isCompleteProfile, LIMITS, type Limit, type Profile } from '../profile/profile';
 import type { UnitSystem } from '../profile/units';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export type ThemeChoice = 'system' | 'light' | 'dark';
 
@@ -24,6 +24,25 @@ export interface HealthCheck {
   /** The user read the advice and chose to continue. */
   acknowledged: boolean;
 }
+
+/** One finished set, kept for progress charts and personal records. */
+export interface SetRecord {
+  /** When the set ended (ISO date text). */
+  at: string;
+  exercise: string;
+  variant: string;
+  reps: number;
+  target: number;
+  /** Average and best form score, 0 to 100. */
+  avgScore: number;
+  bestScore: number;
+  /** Movements that were not counted. */
+  rejected: number;
+  durationMs: number;
+}
+
+/** Keep the newest sets only, so the save can never grow without limit. */
+export const MAX_HISTORY = 3000;
 
 export interface Settings {
   units: UnitSystem;
@@ -44,6 +63,8 @@ export interface SaveData {
   /** Half-filled answers while onboarding is in progress. */
   draft: Partial<Profile>;
   settings: Settings;
+  /** Every finished set, oldest first. Added in save version 2. */
+  history: SetRecord[];
 }
 
 export function newSave(now: Date = new Date()): SaveData {
@@ -57,7 +78,8 @@ export function newSave(now: Date = new Date()): SaveData {
     health: null,
     profile: null,
     draft: {},
-    settings: { units: 'metric', theme: 'system', sound: true, voice: false },
+    settings: { units: 'metric', theme: 'system', sound: true, voice: true },
+    history: [],
   };
 }
 
@@ -67,8 +89,15 @@ type Loose = Record<string, unknown>;
 /** migrations[n] upgrades a version n save to version n + 1. */
 export type Migrations = Record<number, (old: Loose) => Loose>;
 
-/** None yet: version 1 is the first format. Future upgrades get added here. */
-export const MIGRATIONS: Migrations = {};
+export const MIGRATIONS: Migrations = {
+  // Version 2 added the workout history and made the voice coach the default,
+  // because the phone is too far away to read during a set.
+  1: (old) => ({
+    ...old,
+    history: [],
+    settings: { ...(isObject(old.settings) ? old.settings : {}), voice: true },
+  }),
+};
 
 export type LoadResult = { ok: true; data: SaveData } | { ok: false; reason: 'corrupt' | 'too-new' | 'no-path' };
 
@@ -125,6 +154,27 @@ function sanitiseDraft(value: unknown): Partial<Profile> {
   return out;
 }
 
+function sanitiseHistory(value: unknown): SetRecord[] {
+  if (!Array.isArray(value)) return [];
+  const out: SetRecord[] = [];
+  const whole = (v: unknown, max: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(0, Math.round(v))) : 0);
+  for (const item of value.slice(-MAX_HISTORY)) {
+    if (!isObject(item) || typeof item.at !== 'string' || Number.isNaN(Date.parse(item.at))) continue;
+    out.push({
+      at: item.at,
+      exercise: asString(item.exercise, 'pushup'),
+      variant: asString(item.variant, 'standard'),
+      reps: whole(item.reps, 1000),
+      target: whole(item.target, 1000),
+      avgScore: whole(item.avgScore, 100),
+      bestScore: whole(item.bestScore, 100),
+      rejected: whole(item.rejected, 1000),
+      durationMs: whole(item.durationMs, 3_600_000),
+    });
+  }
+  return out;
+}
+
 function sanitiseHealth(value: unknown, fallbackDate: string): HealthCheck | null {
   if (!isObject(value) || !Array.isArray(value.answers)) return null;
   const answers = value.answers.slice(0, 20).map((a) => a === true);
@@ -160,8 +210,9 @@ export function sanitise(raw: Loose, now: Date = new Date()): SaveData {
       units: settings.units === 'imperial' ? 'imperial' : 'metric',
       theme: (['system', 'light', 'dark'] as const).find((t) => t === settings.theme) ?? 'system',
       sound: settings.sound !== false,
-      voice: settings.voice === true,
+      voice: settings.voice !== false,
     },
+    history: sanitiseHistory(raw.history),
   };
 }
 

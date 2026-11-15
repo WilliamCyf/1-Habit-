@@ -237,6 +237,80 @@ disturbed. The app's defaults will be adjusted from that result.
 **Known limit:** in "mix" mode iOS silences web sound when the ring switch is
 on silent. The app will remind you to switch silent mode off.
 
+## D22. How a push-up is judged (the numbers)
+
+The counter measures joint angles from a side view. All thresholds live in
+one place, `PUSHUP` in `src/detectors/pushup.ts`, so they are easy to tune
+once we have data from your real push-ups.
+
+| Rule | Number | Why |
+| --- | --- | --- |
+| Arms count as straight | elbow at 150° or more | Full lockout is about 165°. 150° allows for camera error. |
+| A rep has started | elbow below 140° | |
+| Deep enough to count | elbow at 100° or less | A right angle is 90°. 100° allows for camera error. |
+| Gap between the two | 50° | This gap ("hysteresis") is what stops jitter double-counting. |
+| Fastest allowed | 0.5 s from bend to straight | About 0.7 s per rep. Faster is bouncing. |
+| Body line, coach comments | below 163° | Shoulder, hip and ankle should be near 180°. |
+| Body line, not counted | below 152° | A clear sag or pike. |
+| Body tilt allowed | 42° from flat (52° on knees) | Rules out "push-ups" done standing against a wall. |
+| Shoulder must drop | 5.5% of body length | The body must travel, not just the elbow bend. |
+| Hands and feet may drift | 14% of body length | More means the phone or the person slid. |
+
+**Form score (0 to 100):** depth 40%, body line 35%, lockout at the top 15%,
+tempo 10%. The weakest part decides what the coach says.
+
+**Knee or toes** is detected automatically: on toes the ankle sits clearly
+below the knee, on knees the shin lies flat. So nobody can claim the harder
+version while doing the easier one. Wide and diamond push-ups look the same
+from the side, so those are taken on trust.
+
+## D23. Anti-cheat, version 1: what is built and what the tests prove
+
+Built in M2: live camera only (no upload, no +1 button), a start-position
+gate held for 0.8 s, full range of motion, body line, tempo, real body
+travel, planted hands and feet, a "teleport" check for a second person,
+throwing a rep away if the body is unseen for half a second, and re-checking
+the start position after any pause.
+
+`tests/pushup.test.ts` replays fake recordings and proves each is rejected:
+half reps, fast bouncing, badly sagging or piked hips, standing still with
+jitter, a plank with jitter, standing and waving an arm, lying down and
+bending one arm, shaking or sliding the phone, the body vanishing mid-rep, a
+sudden jump to another body, hidden arms, and random noise.
+
+**Known gap (honest):** pointing the phone at a video of someone else doing
+push-ups would fool version 1. The planned answer is the random coach
+check-in between sets ("wave your left hand"), which a recording cannot
+answer, plus the daily points cap. Those arrive with sessions and points.
+
+## D24. A push-up simulator that exists only in development
+
+To test the workout screen without a person, development mode can feed the
+counter a pretend athlete (`?sim` in the address). The published app does not
+contain this code at all: the build removes it, and I check the built files
+for it. A cheat switch must never ship.
+
+## D25. Save version 2: workout history
+
+Every finished set is stored (date, reps, form scores, rejections, time) for
+progress charts and personal records later. The list is capped at 3,000 sets.
+Old saves are upgraded automatically, and the upgrade is tested.
+
+## D26. The heat governor
+
+If looks take longer than 45 ms on average for 3 seconds, tracking steps down
+from 15 to 12 to 10 looks per second. It steps back up only after 20
+comfortable seconds, and never changes more than once every 6 seconds, so it
+cannot flap. Your phone measured 19 ms, so it should never trigger for you,
+but it protects older phones and hot days.
+
+## D27. The coach never falls behind
+
+Saying "seven, go lower" takes about a second, which is as long as a rep. So
+the voice keeps at most one line waiting, lets a newer count replace an older
+one, and drops any line that has gone stale. Tips are not repeated more than
+once every three reps.
+
 ---
 
 ## Points economy table
