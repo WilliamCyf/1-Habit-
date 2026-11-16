@@ -2310,3 +2310,13 @@ h3 {
 .tab {
   font-size: 11px;
 }
+
+/* ---------- performance: pause what cannot be seen ---------- */
+
+/* While a workout or session covers the app, freeze every animation on the
+   screens underneath. Paused animations cost nothing. */
+:root.covered #app *,
+:root.covered #app *::before,
+:root.covered #app *::after {
+  animation-play-state: paused !important;
+}

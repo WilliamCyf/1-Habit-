@@ -23,7 +23,7 @@ import { shareCard } from './shareCard';
 import { stageFor } from '../world/world';
 import { animateIn, h } from './dom';
 import { mascotSvg } from './mascot';
-import { formatTime, openWorkout } from './workout';
+import { coverApp, formatTime, openWorkout } from './workout';
 
 /**
  * A countdown that only runs while the app is on screen. It uses the clock
@@ -78,6 +78,12 @@ export function openSession(options: SessionOptions): void {
   const root = h('section', { class: 'session', role: 'dialog', 'aria-label': plan.title }, stage);
   document.body.appendChild(root);
   animateIn(root, 'up');
+  coverApp(true);
+
+  /** How long the camera has been on in this session, and whether we have suggested a breather. */
+  let cameraMs = 0;
+  let coolDownOffered = false;
+  const COOL_AFTER_MS = 20 * 60_000;
 
   let ended = false;
   let anyCapped = false;
@@ -193,7 +199,16 @@ export function openSession(options: SessionOptions): void {
         : last.count === 0
           ? 'Nothing counted that time. Shake it off.'
           : `${last.count} ${unit(lastDef, last.count)} · form ${last.avgScore}${earned ? ` · +${earned.total} points` : ''}`;
-    coach.say(last && last.count > 0 ? `${last.count} ${unit(lastDef, last.count)}. Rest.` : 'Rest.');
+    // After about 20 minutes of camera time, add a longer break. Tracking is
+    // the hardest work the phone does, and a pause lets it (and you) cool down.
+    let coolNote: HTMLElement | null = null;
+    if (!coolDownOffered && cameraMs > COOL_AFTER_MS) {
+      coolDownOffered = true;
+      seconds += 60;
+      number.textContent = String(seconds);
+      coolNote = h('p', { class: 'notice' }, 'Extra minute added: your phone has been working hard, and a longer breather is good for you too.');
+      coach.say('Great work. Take an extra minute here. Your phone could use the breather, and so could you.');
+    } else coach.say(last && last.count > 0 ? `${last.count} ${unit(lastDef, last.count)}. Rest.` : 'Rest.');
     let warned = false;
     const timer = countdown(seconds, (left) => {
       number.textContent = String(left);
@@ -207,6 +222,7 @@ export function openSession(options: SessionOptions): void {
       h('p', { class: 'ss-kicker' }, 'Rest'),
       number,
       h('p', { class: 'ss-how' }, lastLine),
+      coolNote,
       h('p', { class: 'muted' }, `Next: ${next}`),
       h('p', { class: 'muted small' }, 'Camera is off while you rest.'),
       h(
@@ -222,6 +238,7 @@ export function openSession(options: SessionOptions): void {
 
   function runSet(block: SetPlan, def: ExerciseDef, setIndex: number, checkIn: CheckIn | null): Promise<{ summary: SetSummary | null; award: AwardResult | null }> {
     return new Promise((resolve) => {
+      const cameraOnAt = Date.now();
       show(h('p', { class: 'muted' }, 'Camera on…'));
       void openWorkout({
         def,
@@ -231,7 +248,10 @@ export function openSession(options: SessionOptions): void {
         coach,
         checkIn,
         label: `Set ${setIndex + 1} of ${block.sets}`,
-        onClose: (summary, award) => resolve({ summary, award }),
+        onClose: (summary, award) => {
+          cameraMs += Date.now() - cameraOnAt;
+          resolve({ summary, award });
+        },
       });
     });
   }
@@ -337,6 +357,7 @@ export function openSession(options: SessionOptions): void {
     coach.quiet();
     void wakeLock.release();
     root.remove();
+    coverApp(false);
     options.onClose();
   }
 
@@ -414,5 +435,9 @@ export function interlude(title: string, text: string, seconds: number, coach: C
   const root = h('section', { class: 'session' }, h('div', { class: 'ss-stage' }, view));
   document.body.appendChild(root);
   animateIn(root, 'up');
-  return timer.finished.then(() => root.remove());
+  coverApp(true);
+  return timer.finished.then(() => {
+    root.remove();
+    coverApp(false);
+  });
 }

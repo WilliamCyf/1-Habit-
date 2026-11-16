@@ -36,6 +36,13 @@ export interface WorkoutOptions {
   onClose(summary: SetSummary | null, award: AwardResult | null): void;
 }
 
+let covers = 0;
+/** Count how many full-screen layers are open, and pause what is hidden beneath them. */
+export function coverApp(on: boolean): void {
+  covers = Math.max(0, covers + (on ? 1 : -1));
+  document.documentElement.classList.toggle('covered', covers > 0);
+}
+
 export function formatTime(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -75,6 +82,7 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
   const big = h('div', { class: 'wk-big' });
   const checkItems = [h('li'), h('li'), h('li')];
   const lightNote = h('p', { class: 'wk-light' }, 'It is quite dark. More light helps me see you.');
+  const sleepNote = h('p', { class: 'wk-light' }, 'Your screen may dim during the set. To stop that: Settings → Display & Brightness → Auto-Lock → Never.');
   const ring = h('div', { class: 'wk-hold' }, h('div', { class: 'wk-hold-fill' }));
   const positionCard = h(
     'div',
@@ -83,6 +91,7 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
     h('ul', { class: 'wk-checks' }, ...checkItems),
     ring,
     lightNote,
+    sleepNote,
     h('p', { class: 'wk-hint' }, 'Tip: lean the phone against a wall about 2 m away, so your whole body fits.'),
   );
   const checkInCard = h(
@@ -107,6 +116,9 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
   const root = h('section', { class: 'workout', 'data-phase': 'loading', role: 'dialog', 'aria-label': version.name }, stage);
   document.body.appendChild(root);
   animateIn(root, 'up');
+  // Freeze the little animations on the screens underneath. They cannot be
+  // seen during a set, and every bit of saved work keeps the phone cooler.
+  coverApp(true);
 
   const skeleton = new SkeletonRenderer(canvas);
   let cueTimer = 0;
@@ -185,6 +197,7 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
           });
           (ring.firstElementChild as HTMLElement).style.transform = `scaleX(${view.readyProgress.toFixed(2)})`;
           lightNote.classList.toggle('show', runner.isDark);
+          sleepNote.classList.toggle('show', runner.screenMaySleep);
         }
         if (!debugBox.hidden) debugBox.textContent = runner.debugText;
       },
@@ -338,6 +351,7 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
     runner.dispose();
     if (!options.coach) coach.quiet();
     root.remove();
+    coverApp(false);
     options.onClose(summary, award);
   }
 

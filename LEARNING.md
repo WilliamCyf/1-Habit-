@@ -47,7 +47,11 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 │   ├── models/             the pose model (the "brain" file)
 │   ├── icons/              app icon and mascot
 │   └── manifest.webmanifest  the app's ID card for iOS
-├── tests/                Automated checks
+│   (also in src/: detectors/ counting engines · exercises/ the library ·
+│    coach/ the voice · workout/ runs one set · plan/ the coach's brain ·
+│    economy/ points and the ledger · world/ pet, garden, shop ·
+│    progress/ statistics and badges)
+├── tests/                Automated checks (416 of them)
 ├── scripts/              Helper scripts (copy the engine, make the icons)
 └── .github/workflows/    The robot that tests and publishes the site
 ```
@@ -290,6 +294,18 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 - **Simulation test:** a test that plays out a whole scenario, such as four
   weeks of workouts, to check the economy balances.
 
+### Speed and heat (Milestone 6)
+
+- **Budget:** a limit you set in advance (time per look, code size) and
+  check automatically, like a spending limit on a card.
+- **Guard (in CI):** an automatic check that blocks a release when a rule is
+  broken, so the rule cannot be forgotten.
+- **Compositor:** the part of the browser that can slide and fade finished
+  pictures using the graphics chip, without redrawing them. That is why
+  "transform" and "opacity" animations are the cheap ones.
+- **Polling:** asking "anything new?" again and again on a timer. It wastes
+  battery, so the app never does it: it reacts to events or reads the clock.
+
 ### Tools
 
 - **npm:** the app store for code libraries. `npm install` downloads them.
@@ -493,3 +509,47 @@ ledger. So:
 Stored facts are few and plain (what you did, and when). Everything else is
 a calculation, so it can never be out of date and cannot be edited into
 existence.
+
+### Lesson 6: the cheapest work is the work you do not do
+
+Making a phone app fast and cool is mostly about leaving things out.
+
+1. **Turn it off.** The camera and the tracker are by far the most expensive
+   parts. They run only during a set. A 20-minute session might have the
+   camera on for 8 minutes.
+2. **Do it less often.** 15 looks a second instead of 30. Numbers on screen
+   refresh when they change, not 60 times a second.
+3. **Do it once.** The tracker is loaded once per session and reused.
+4. **Work it out later.** The pet does not get hungrier on a timer. The app
+   stores a time and does one subtraction when you next open it.
+5. **Measure, then decide.** Milestone 0 measured your phone before anything
+   else was built. Every later choice (15 looks, lite model, no background
+   worker) came from those numbers, not from a guess.
+
+The time budget for one look, using your phone's own measurement:
+
+```
+                          1000 ms
+  time per look slot = ─────────────── = 66.7 ms
+                         15 looks
+
+                             19 ms used
+  share of the slot used = ────────────── = 28%
+                             66.7 ms slot
+```
+
+So the phone rests for about 72% of the time even while tracking. That
+resting share is what keeps it cool.
+
+---
+
+## Where to go next (if you want to keep learning)
+
+- Change a number and see what happens: the push-up thresholds are at the
+  top of `src/detectors/pushup.ts`, prices are in `src/world/catalog.ts`.
+- Add a shop item: one line in `src/world/catalog.ts`.
+- Add a badge: one line in `src/progress/badges.ts`.
+- Read a test file. `tests/pushup.test.ts` reads almost like plain English
+  and shows exactly what the counter promises.
+- Run `npm test` after any change. If the tests still pass, you have not
+  broken a promise the app makes.

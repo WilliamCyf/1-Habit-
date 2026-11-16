@@ -6,6 +6,7 @@ import { dailyNeed, energyTarget, goalBlurb, LEVEL_NAMES, roundKcal, startLevel,
 import { HEALTH_QUESTIONS, NOT_MEDICAL_ADVICE } from '../profile/health';
 import { LABELS, profileProblems, type Profile } from '../profile/profile';
 import { formatHeight, formatWeight } from '../profile/units';
+import { debugInfo } from '../platform/debugInfo';
 import { requestPersistence, storageUsage } from '../platform/storage';
 import type { ThemeChoice } from '../state/save';
 import { exportBackup, importBackup } from './backup';
@@ -343,6 +344,17 @@ function meTab(p: Profile): HTMLElement {
             h('h3', null, 'Credits'),
             h('p', { class: 'muted' }, 'Body tracking by MediaPipe (Google, Apache 2.0 licence). All artwork is original.'),
             h('p', { class: 'muted small' }, `Version ${__APP_VERSION__}`),
+            button('Copy debug info', {
+              block: true,
+              variant: 'ghost',
+              onClick: () => {
+                const text = debugInfo(__APP_VERSION__, getState());
+                navigator.clipboard.writeText(text).then(
+                  () => toast('Copied. Paste it into a message to report a problem.'),
+                  () => toast('Could not copy on this device.'),
+                );
+              },
+            }),
             button('Close', { block: true, variant: 'secondary', onClick: () => sheet.close() }),
           ),
         ),

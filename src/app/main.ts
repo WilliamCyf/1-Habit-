@@ -3,9 +3,15 @@
 // show, and switches on offline support.
 import { getState, initStore, onWriteProblem, subscribe } from './store';
 import { requestPersistence } from '../platform/storage';
+import { noteError } from '../platform/debugInfo';
 import { toast } from '../ui/components';
 import { renderHome } from '../ui/home';
 import { renderOnboarding } from '../ui/onboarding';
+
+// Keep a short list of unexpected errors. There is no developer console on
+// an iPhone, so "Me → About → Copy debug info" lets a user send these to us.
+window.addEventListener('error', (e) => noteError(`${e.message} (${(e.filename || '').split('/').pop() ?? ''}:${e.lineno})`));
+window.addEventListener('unhandledrejection', (e) => noteError(e.reason instanceof Error ? `${e.reason.name}: ${e.reason.message}` : String(e.reason)));
 
 const root = document.getElementById('app')!;
 const loadNote = initStore();

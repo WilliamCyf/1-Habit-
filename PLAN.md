@@ -6,15 +6,9 @@ to earn points, and points keep a little pet and garden alive.
 
 This file is the map. Read the "Where we are" box first.
 
-> **Where we are:** Milestones 0 to 5 are built and live. You asked me to
-> keep building without waiting for a test after each milestone, so I am
-> finishing with Milestone 6 (speed and heat hardening, final documents).
->
-> **Only a real iPhone can confirm these, whenever you have a moment:**
-> 1. Do real push-ups count correctly? (Today → Start. Tap the big number
->    five times to see live angles if something seems off.)
-> 2. Does the coach's voice play nicely with your music? (Camera check →
->    Sound check.)
+> **Where we are:** all six milestones are built and live. What remains is
+> tuning from real-phone testing. The short list of things only your iPhone
+> can confirm is in README.md ("What only your iPhone can confirm").
 
 ---
 
@@ -64,10 +58,14 @@ department with one job, and they pass work to each other in one direction.
 | `src/ui/` | Screens, navigation, animations, Pip the coach | **Built (M1)** |
 | `src/profile/` | Your details, health check, calorie estimates, limits | **Built (M1)** |
 | `src/sw/` | The offline helper (service worker) | **Built (M1)** |
-| `src/detectors/` | One rep counter per exercise, plus anti-cheat checks | M2, M3 |
-| `src/plan/` | The coach: weekly plan, progression, deload, auto-adjust | M3 |
-| `src/economy/` | Points rules, the ledger, daily cap, streaks, quests | M4 |
-| `src/world/` | Pet, garden, shop | M4 |
+| `src/detectors/` | The counting engines and anti-cheat checks | **Built (M2, M3)** |
+| `src/exercises/` | The library: each exercise's rules and stick-figure model | **Built (M3)** |
+| `src/coach/` | The voice: what to say, and when | **Built (M2)** |
+| `src/workout/` | Runs one camera set from start to finish | **Built (M2, M3)** |
+| `src/plan/` | The coach's brain: weekly plan, progression, deload, auto-adjust | **Built (M3)** |
+| `src/economy/` | Points rules, the ledger, daily cap, streaks, quests | **Built (M4)** |
+| `src/world/` | Pet, garden, shop | **Built (M4)** |
+| `src/progress/` | Statistics and badges | **Built (M5)** |
 | `tests/` | Automated checks, including fake "cheater" recordings | every milestone |
 
 Two rules keep this clean:
@@ -90,10 +88,10 @@ then I wait for your feedback.
 | M0 | Camera check | **Passed.** 15 looks per second, 19 ms think time, no heat slowdown in 5 minutes. |
 | M1 | App shell, onboarding, profile, install | **Built.** Setup, health check, calorie estimates, offline, backups. |
 | M2 | Push-up detector, anti-cheat v1, camera screen, voice coach | **Built.** 34 replayed recordings prove honest reps count and fakes do not. Needs a real-body check. |
-| **M3** | **Plan engine and the other exercises (built)** | A 4-week plan appears, every exercise has a demo and a reliable counter. |
+| M3 | Plan engine and the other exercises | **Built.** | A 4-week plan appears, every exercise has a demo and a reliable counter. |
 | M4 | Points, shop, pet and garden | **Built.** Tamper-evident points record, daily cap, streaks, quests, four pets, a garden and a shop. |
 | M5 | Polish: sound, share cards, progress, achievements | **Built.** Progress charts, 18 badges, confetti, share cards, link-preview picture. |
-| M6 | Speed and heat hardening | 15-minute workout: smooth, cool enough, no bugs. |
+| M6 | Speed and heat hardening | **Built.** Heat governor, camera off outside sets, a cool-down break after 20 camera minutes, paused hidden animations, a size budget enforced on every publish. Needs a real 15-minute session to confirm. |
 
 ### The exercise library (built in M3)
 

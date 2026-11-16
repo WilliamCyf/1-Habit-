@@ -35,6 +35,8 @@ jobs:
         run: npm test
       - name: Build the site into the dist folder
         run: npm run build
+      - name: Check the app code is still within its size budget
+        run: node scripts/check-size.mjs
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist

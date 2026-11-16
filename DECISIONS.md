@@ -461,6 +461,32 @@ The link-preview picture (`og.png`) is a fixed image made at build time.
 Confetti is about 70 pieces on one canvas for 1.6 seconds, then it is
 removed. It is skipped if the phone is set to reduce motion.
 
+## D42. The heat and battery pass
+
+What keeps the phone cool, in order of how much it matters:
+
+| Measure | Effect |
+| --- | --- |
+| Camera fully off outside sets | The biggest saving. Warm-ups, rests, cool-downs, menus and the pet world use no camera at all. |
+| 15 looks per second, not 30 | Half the tracking work. Your phone measured 19 ms per look, so about 70% of every slice of time is idle. |
+| The smallest model, on the graphics chip | Lite model, 640 x 480 picture. |
+| Heat governor | Steps down to 12 then 10 looks per second if looks get slow, and back up when the phone recovers. |
+| One tracker for the whole session | The slow first-use set-up happens once, behind a loading screen. |
+| A longer break after 20 camera minutes | The session adds a minute to the next rest and says why. |
+| Nothing runs when hidden | Auto-pause in the background. Animations under a workout are frozen. No polling timers anywhere: the pet and garden are worked out from the clock. |
+| Cheap drawing | The skeleton is 3 drawing calls on one canvas. Animations use only transform and opacity. |
+| Small code | 250 KB of app code against a 300 KB budget, checked on every publish. |
+
+**Not verified:** actual temperature over a 15-minute session. Only your
+phone can tell us. If it runs warm, the first lever is 12 looks per second,
+then a 480-pixel picture. Each is a one-line change.
+
+## D43. A size budget the robot enforces
+
+Every publish runs `scripts/check-size.mjs`. If the app's own code passes
+300 KB, the publish fails. Budgets that are only written down get ignored;
+budgets that block a release get kept.
+
 ---
 
 ## Points economy table

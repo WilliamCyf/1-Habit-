@@ -135,6 +135,11 @@ export class SetRunner {
     return this.dark;
   }
 
+  /** True if iOS would not promise to keep the screen awake. */
+  get screenMaySleep(): boolean {
+    return this.wakeLock.state === 'refused' || this.wakeLock.state === 'unsupported';
+  }
+
   get target(): number {
     return this.options.goal.kind === 'count' ? this.options.goal.target : this.options.goal.seconds;
   }
