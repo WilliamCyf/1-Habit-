@@ -401,9 +401,114 @@ then starts from the profile.
 
 ---
 
+## D35. Points: one door in, and a tamper-evident record
+
+**One door.** Points are created in exactly one function, `awardSet` in
+`src/economy/award.ts`, and that function is called from exactly one place:
+the end of a camera-verified set. The shop can only subtract.
+
+**No stored balance.** The balance is never saved as a number. It is added up
+from the ledger every time, so there is no single figure to edit.
+
+**A hash chain.** Each ledger line carries a fingerprint (SHA-256) of itself
+and of the line before. Change, delete, insert or reorder any line and the
+fingerprints stop matching. On loading, the app keeps only the lines that
+check out and tells you plainly that it had to. Tests try each kind of edit.
+
+**Honest limit:** the code that makes the fingerprints is on your phone too.
+A programmer who reads it could build a valid fake record. This stops casual
+edits to the saved data, which is what was asked for. It cannot stop an
+expert, and nothing without a server can.
+
+## D36. A kind pet
+
+- It never dies and never gets ill. The worst it gets is sleepy or sad.
+- Needs are worked out from the clock when you open the app. No timers run.
+- Time away is capped at two weeks, so a long holiday looks the same as a short one.
+- The first workout of the day lifts its mood and energy and gives a free snack.
+  One workout plus one meal brings a neglected pet back to "fine". A test proves it.
+- No countdown warnings, no notifications, no "your pet misses you" guilt.
+- Missing a quest costs nothing. A broken streak just starts again at 1.
+- A streak "freeze" is earned every 7 days (up to 2 saved) and covers a
+  missed day automatically.
+
+## D37. Harvests feed the pet. They do not make points.
+
+Garden produce goes into your bag as pet food. If harvests paid points, the
+garden would become a way to earn without exercising, which breaks the whole
+idea. Points come from verified reps only.
+
+---
+
 ## Points economy table
 
-Coming in Milestone 4, once we know your real workout volume from M2 and M3.
+**The formula for one set:**
+
+```
+points = reps (or seconds) x difficulty x version factor x form factor x 2
+```
+
+| Part | Values |
+| --- | --- |
+| Difficulty (per rep) | Burpee 1.5 · Push-up 1.0 · Lunge 0.8 · Squat 0.7 · Sit-up 0.6 · Bridge, bird-dog, good morning 0.5 · Climber 0.4 · Jack, high knees 0.3 · Plank 0.25 per second |
+| Version factor | Beginner 0.8 · Standard 1.0 · Advanced 1.25 |
+| Form factor | 0.7 at a form score of 50 or below, rising to 1.2 at 100 |
+
+Example: 10 standard push-ups with perfect form = 10 x 1.0 x 1.0 x 1.2 x 2 = 24 points.
+
+**Bonuses and limits:**
+
+| Rule | Amount |
+| --- | --- |
+| First verified set of the day | +20 |
+| Streak | +5 per day beyond the first, up to +25 |
+| Beating your best set of an exercise | +15 |
+| Weekly quests | +60 sessions, +40 reps, +30 variety |
+| Daily cap on workout points | 400 (bonuses are on top) |
+
+**What things cost:**
+
+| Item | Price | Does |
+| --- | --- | --- |
+| Berry snack | 6 | +25 food |
+| Hearty bowl | 16 | +60 food |
+| Feast (level 2) | 34 | +100 food, +15 happiness |
+| Fresh water | 8 | +70 water |
+| Spring water (level 2) | 14 | +100 water, +5 happiness |
+| Crunchy treat | 12 | +25 happiness |
+| Can of water | 10 | 6 waterings |
+| Seeds: carrot, sunflower, pumpkin, berry bush | 10, 18, 30, 45 | Levels 1, 2, 3, 5 |
+| Toys: ball, kite, drum | 60, 110, 160 | Play for +20, +30, +40 happiness |
+| Decorations: lantern, bench, pond, windmill | 50, 80, 120, 200 | Happiness fades 5% slower each |
+| Extra garden plots (3rd to 6th) | 80, 150, 250, 400 | Levels 2, 3, 5, 7 |
+
+**The balance, checked by a test that simulates real planned weeks:**
+
+The pet's food fades by 60 a day and water by 72. Keeping both topped up
+costs about 24 points a day:
+
+```
+               60 food per day                      72 water per day
+  food  =  ────────────────────  x 16  =  16    water  =  ────────────────────  x 8  =  8.2
+            60 food per bowl                          70 water per bowl
+```
+
+That is about 170 points a week.
+
+| Plan | Points per week (sets + bonuses) | Pet care | Left to save |
+| --- | --- | --- | --- |
+| 2 days x 10 min | more than 170 | 170 | a little |
+| 4 days x 20 min | roughly 600 to 750, plus up to 130 from quests | 170 | most of it |
+
+One normal 20-minute session pays for more than four days of care. So a
+planned workout comfortably covers the pet and leaves points for seeds, toys
+and the garden, which is what you asked for.
+
+**Levels:** level 2 at 120 lifetime points, level 3 at 480, level 4 at 1,080,
+level 5 at 1,920. Each level needs more than the last. Levels unlock seeds,
+decorations and garden plots.
+
+**Pet growth:** youngster at 300 verified reps, grown-up at 1,500.
 
 ---
 

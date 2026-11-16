@@ -5,6 +5,9 @@
 import { getState, update } from '../app/store';
 import { Coach } from '../coach/coach';
 import { CUE_TEXT, LINES, REJECT_TEXT, rejectLine } from '../coach/phrases';
+import { awardSet, claimQuests, type AwardResult, type Bonus } from '../economy/award';
+import { stageFor } from '../world/world';
+import { petSvg } from './petArt';
 import type { RejectReason } from '../detectors/types';
 import { placement, unit, type ExerciseDef, type Level } from '../exercises/library';
 import { SkeletonRenderer } from '../pose/skeleton';
@@ -28,8 +31,8 @@ export interface WorkoutOptions {
   label?: string;
   /** Share the session's coach so speech does not overlap. */
   coach?: Coach;
-  /** Called when the screen closes. Null means the camera could not start. */
-  onClose(summary: SetSummary | null): void;
+  /** Called when the screen closes. A null summary means the camera could not start. */
+  onClose(summary: SetSummary | null, award: AwardResult | null): void;
 }
 
 export function formatTime(ms: number): string {
@@ -64,7 +67,10 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
   const countBox = h('div', { class: 'wk-count' }, count, countOf);
   const title = h('div', { class: 'wk-title' }, options.label ? h('small', null, options.label) : null, h('strong', null, version.name));
   const cue = h('div', { class: 'wk-cue', role: 'status', 'aria-live': 'polite' });
-  const pip = h('div', { class: 'wk-pip', html: mascotSvg('happy', 72) });
+  // Your pet cheers you on from the corner (or Pip, until you have adopted one).
+  const petNow = getState().pet;
+  const totalReps = getState().history.reduce((sum, s) => sum + (s.exercise === 'plank' ? 0 : s.reps), 0);
+  const pip = h('div', { class: 'wk-pip', html: petNow ? petSvg(petNow.species, stageFor(totalReps), 'cheer', 78) : mascotSvg('happy', 72) });
   const big = h('div', { class: 'wk-big' });
   const checkItems = [h('li'), h('li'), h('li')];
   const lightNote = h('p', { class: 'wk-light' }, 'It is quite dark. More light helps me see you.');
@@ -106,6 +112,8 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
   let debugTaps = 0;
   let closed = false;
   let saidPosition = false;
+  let award: AwardResult | null = null;
+  let questBonuses: Bonus[] = [];
 
   function showCue(text: string, tone: 'good' | 'warn' = 'warn'): void {
     cue.textContent = text;
@@ -248,9 +256,13 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
   );
 
   function saveSet(s: SetSummary): void {
-    if (s.count === 0) return; // nothing verified, nothing to record
+    if (s.count === 0 || s.endedBy === 'checkin-failed') return; // nothing verified, nothing to record
+    const now = new Date();
     update(
       (state) => {
+        // THE ONLY PLACE POINTS ARE CREATED: a set the camera has just verified.
+        award = awardSet(state, def, level, s, now);
+        if (state.profile) questBonuses = claimQuests(state, state.profile.daysPerWeek, now);
         state.history.push({
           at: new Date().toISOString(),
           exercise: def.id,
@@ -291,6 +303,16 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
             { class: 'muted' },
             s.endedBy === 'checkin-failed' ? 'I could not see the raised hand, so the set did not start.' : 'That is fine. Have a look at the tips below and try again when you are ready.',
           ),
+      award && award.total + questBonuses.length > 0
+        ? h(
+            'div',
+            { class: 'card points-card' },
+            h('strong', null, `+${award.total + questBonuses.reduce((n, b) => n + b.amount, 0)} points`),
+            h('small', null, `${award.points} for the set`),
+            ...[...award.bonuses, ...questBonuses].map((b) => h('small', null, `+${b.amount} ${b.label}`)),
+            award.capped ? h('small', { class: 'cap-note' }, 'You have reached today’s points limit. Rest is part of training.') : null,
+          )
+        : null,
       s.mainCue ? h('p', { class: 'notice' }, `Coach’s tip for next time: ${CUE_TEXT[s.mainCue].show.toLowerCase()}.`) : null,
       reasons.length
         ? h(
@@ -314,7 +336,7 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
     runner.dispose();
     if (!options.coach) coach.quiet();
     root.remove();
-    options.onClose(summary);
+    options.onClose(summary, award);
   }
 
   void runner.start();

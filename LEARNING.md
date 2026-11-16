@@ -268,6 +268,28 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
   the warm-up, await the set, await the rest"), even though each step takes
   minutes and waits for you.
 
+### Points and the world (Milestone 4)
+
+- **Hash (fingerprint):** a function that turns any text into a short fixed
+  code. Change one letter and the code changes completely. Ours is SHA-256.
+- **Hash chain:** a list where each line includes the fingerprint of the line
+  before, so no line can be changed without breaking every later one. The
+  idea inside every blockchain, and inside our points ledger.
+- **Ledger:** an account book: a list of every amount in and out. The balance
+  is the sum of the lines, never a separate number.
+- **Tamper-evident:** you can tell if it was changed. (Not the same as
+  tamper-proof, which would mean it cannot be changed.)
+- **Salt:** extra text mixed into a fingerprint so a generic tool gives a
+  different answer.
+- **Timestamp:** a stored date and time. The pet's hunger is worked out from
+  "when were these numbers last right?", not by a ticking timer.
+- **Idempotent:** safe to do twice. Each bonus has a tag (such as
+  `daily:2026-11-16`) and is skipped if that tag is already in the ledger.
+- **Catalogue (data-driven design):** shop items are a list of data, not
+  code. Adding an item is adding one line.
+- **Simulation test:** a test that plays out a whole scenario, such as four
+  weeks of workouts, to check the economy balances.
+
 ### Tools
 
 - **npm:** the app store for code libraries. `npm install` downloads them.
@@ -280,7 +302,7 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 - **Dynamic import:** loading a piece of code only at the moment it is needed.
   The tracking library is not downloaded until you start the camera.
 - **Unit test:** a tiny automated check of one piece of logic, such as "does
-  the pacer really pick 15 of 30 frames?". We have 335 so far.
+  the pacer really pick 15 of 30 frames?". We have 401 so far.
 - **End-to-end test:** a robot opens the real page in a real browser and
   clicks through it. I do this with a fake camera feed.
 - **GitHub Actions (CI):** a robot on GitHub that runs the tests and publishes
@@ -413,3 +435,42 @@ The plan engine's weekly growth is simple arithmetic:
 
 With week factors of 1.0, 1.1, 1.2 and then 0.7 for the easier fourth week.
 A base of 12 squats becomes 12, 13, 14, then 8.
+
+### Lesson 4: an account book that notices if you cheat
+
+You study accounting, so this one should feel familiar. Open
+`src/economy/ledger.ts`.
+
+**The balance is derived, never stored.** Just as a bank balance is the sum
+of the transactions, the app adds up the ledger lines every time. There is no
+"points: 500" number sitting in the save file waiting to be edited.
+
+**Each line is sealed to the one before.** Every line stores a fingerprint of
+its own contents plus the previous line's fingerprint:
+
+```
+  line 3 fingerprint = hash( line 3 contents + line 2 fingerprint )
+```
+
+Change the amount on line 2 and its fingerprint changes. Line 3 recorded the
+old one, so it no longer matches, and neither does anything after it. It is
+like numbered, signed pages in a bound book: you cannot swap a page without
+the next page showing the break.
+
+**Controls at the door.** Good accounting separates who can record income
+from who can spend. Here, only `awardSet` can write an "earn" line and it is
+called from one place: the end of a camera-verified set. The shop can only
+write "spend" lines, and only if the balance covers them.
+
+**The pet uses dates, not timers.** A bank does not watch your account every
+second to add interest. It works it out from two dates. The pet works the
+same way:
+
+```
+                         hours since last update
+  food now = food then  −  ───────────────────────  x  2.5
+                                      1
+```
+
+Open the app after 10 hours and food has dropped by 25. Nothing ran in
+between, so nothing used the battery.

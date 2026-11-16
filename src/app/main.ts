@@ -49,6 +49,12 @@ subscribe(() => {
   else redrawHome?.();
 });
 
+// Coming back to the app after a while: time has passed for the pet and the
+// garden, so redraw the screen from the current clock. (No timers needed.)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) redrawHome?.();
+});
+
 // ----------------------------------------------------------------- offline
 // A service worker is a small helper script the browser keeps running
 // beside the app. Ours keeps a copy of the app's files on the phone, so it

@@ -4,7 +4,7 @@ A no-equipment home workout coach for iPhone. The camera counts every rep, so
 reps cannot be faked. Verified reps earn points, and points keep a little pet
 and garden alive.
 
-**Status:** Milestone 3 of 6. See [PLAN.md](PLAN.md) for the road ahead.
+**Status:** Milestone 4 of 6. See [PLAN.md](PLAN.md) for the road ahead.
 
 What works today:
 
@@ -16,9 +16,11 @@ What works today:
 - A 4-week plan that adapts to how you actually perform, with warm-ups and cool-downs
 - Hands-free sessions: tap Start once and the voice coach leads the rest
 - A 2-minute fitness test to place you at the right level
+- Points for every verified rep, with streaks, weekly quests and personal records
+- A pet (four species to choose from) and a garden, cared for with those points
 - The camera check (tracking and sound diagnostics)
 
-Not built yet: points, the pet and garden, progress charts.
+Not built yet: progress charts, badges, share cards.
 
 **Live link:** https://williamcyf.github.io/1-Habit-/
 
@@ -122,7 +124,15 @@ video and raises their own hand each time could still get through.
 **Taken on trust:** hand width in push-ups (wide, diamond) cannot be seen
 from the side.
 
-**Still to come:** a tamper-evident points record and a daily points cap.
+**The points record:** points are created in one place only, after a
+camera-verified set. Every line of the record carries a fingerprint of the
+line before it, so changing, deleting or inserting a line in the saved data
+is detected, and the app falls back to the last part it can verify. There is
+a daily cap of 400 workout points, so grinding is not rewarded.
+
+**What that record cannot stop:** the code that makes the fingerprints is on
+your phone too. Someone who reads the code can build a valid fake record. It
+stops casual edits, not a determined programmer.
 
 **What it cannot stop:** a determined programmer who rewrites the app's code
 on their own device, or someone who builds a custom rig to fool the camera.

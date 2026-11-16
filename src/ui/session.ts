@@ -9,6 +9,7 @@
 import { getState, update } from '../app/store';
 import { Coach } from '../coach/coach';
 import { EXERCISES, placement, unit, type ExerciseDef, type Level } from '../exercises/library';
+import { claimQuests, type AwardResult, type Bonus } from '../economy/award';
 import { adjust, type ExerciseProgress, type SessionPlan, type SetPlan, type SetResult, type TimedStep } from '../plan/plan';
 import { WakeLock } from '../platform/ios';
 import { MAX_HISTORY } from '../state/save';
@@ -60,6 +61,7 @@ interface BlockResult {
   block: SetPlan;
   def: ExerciseDef;
   sets: SetSummary[];
+  points: number;
 }
 
 export function openSession(options: SessionOptions): void {
@@ -73,6 +75,7 @@ export function openSession(options: SessionOptions): void {
   animateIn(root, 'up');
 
   let ended = false;
+  let anyCapped = false;
   let demo: DemoHandle | null = null;
   const startedAt = Date.now();
   const results: BlockResult[] = [];
@@ -177,14 +180,14 @@ export function openSession(options: SessionOptions): void {
     await timer.finished;
   }
 
-  async function rest(seconds: number, last: SetSummary | null, lastDef: ExerciseDef, next: string): Promise<void> {
+  async function rest(seconds: number, last: SetSummary | null, lastDef: ExerciseDef, next: string, earned: AwardResult | null): Promise<void> {
     const number = h('strong', { class: 'ss-clock' }, String(seconds));
     const lastLine =
       !last || last.endedBy === 'checkin-failed'
         ? 'Set skipped'
         : last.count === 0
           ? 'Nothing counted that time. Shake it off.'
-          : `${last.count} ${unit(lastDef, last.count)} · form ${last.avgScore}`;
+          : `${last.count} ${unit(lastDef, last.count)} · form ${last.avgScore}${earned ? ` · +${earned.total} points` : ''}`;
     coach.say(last && last.count > 0 ? `${last.count} ${unit(lastDef, last.count)}. Rest.` : 'Rest.');
     let warned = false;
     const timer = countdown(seconds, (left) => {
@@ -212,7 +215,7 @@ export function openSession(options: SessionOptions): void {
     await timer.finished;
   }
 
-  function runSet(block: SetPlan, def: ExerciseDef, setIndex: number, checkIn: CheckIn | null): Promise<SetSummary | null> {
+  function runSet(block: SetPlan, def: ExerciseDef, setIndex: number, checkIn: CheckIn | null): Promise<{ summary: SetSummary | null; award: AwardResult | null }> {
     return new Promise((resolve) => {
       show(h('p', { class: 'muted' }, 'Camera on…'));
       void openWorkout({
@@ -223,7 +226,7 @@ export function openSession(options: SessionOptions): void {
         coach,
         checkIn,
         label: `Set ${setIndex + 1} of ${block.sets}`,
-        onClose: resolve,
+        onClose: (summary, award) => resolve({ summary, award }),
       });
     });
   }
@@ -241,6 +244,8 @@ export function openSession(options: SessionOptions): void {
     const minutes = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
     const kcal = Math.round((plan.kcal * setsDone) / totalSets);
     const notes: string[] = [];
+    let questBonuses: Bonus[] = [];
+    let cappedToday = false;
 
     update((state) => {
       for (const r of results) {
@@ -258,7 +263,11 @@ export function openSession(options: SessionOptions): void {
       state.planStart ??= new Date().toISOString();
       state.sessions.push({ at: new Date().toISOString(), title: plan.title, focus: plan.focus, minutes, sets: setsDone, reps, kcal });
       if (state.sessions.length > MAX_HISTORY) state.sessions.splice(0, state.sessions.length - MAX_HISTORY);
+      // Finishing a session can complete a weekly quest.
+      if (state.profile) questBonuses = claimQuests(state, state.profile.daysPerWeek, new Date());
     });
+    cappedToday = anyCapped;
+    const points = results.reduce((n, r) => n + r.points, 0) + questBonuses.reduce((n, b) => n + b.amount, 0);
 
     const complete = setsDone === totalSets;
     if (complete) coach.fanfare();
@@ -272,8 +281,11 @@ export function openSession(options: SessionOptions): void {
         h('div', { class: 'stat' }, h('strong', null, String(reps)), h('small', null, 'verified reps')),
         h('div', { class: 'stat' }, h('strong', null, `${setsDone}/${totalSets}`), h('small', null, 'sets')),
         h('div', { class: 'stat' }, h('strong', null, `${minutes}`), h('small', null, 'minutes')),
-        h('div', { class: 'stat' }, h('strong', null, `${kcal}`), h('small', null, 'kcal, roughly')),
+        h('div', { class: 'stat' }, h('strong', null, `+${points}`), h('small', null, 'points earned')),
       ),
+      h('p', { class: 'muted small' }, `Around ${kcal} kcal burned. That is an estimate.`),
+      questBonuses.length ? h('div', { class: 'card points-card' }, ...questBonuses.map((b) => h('small', null, `+${b.amount} ${b.label}`))) : null,
+      cappedToday ? h('p', { class: 'muted small' }, 'You reached today’s points limit. Rest is part of training.') : null,
       h(
         'ul',
         { class: 'ss-list' },
@@ -331,19 +343,21 @@ export function openSession(options: SessionOptions): void {
       if (setIndex === 0) {
         await intro(block, def);
         if (ended) break;
-        results.push({ block, def, sets: [] });
+        results.push({ block, def, sets: [], points: 0 });
       }
-      const summary = await runSet(block, def, setIndex, checkIns[i] ?? null);
+      const { summary, award } = await runSet(block, def, setIndex, checkIns[i] ?? null);
       if (summary === null) {
         // The camera could not start. There is no point carrying on.
         ended = true;
         break;
       }
       results[results.length - 1]!.sets.push(summary);
+      results[results.length - 1]!.points += award?.total ?? 0;
+      anyCapped ||= award?.capped ?? false;
       const next = order[i + 1];
       if (next && !ended) {
         const nextName = next.def.versions[next.block.level - 1]!.name;
-        await rest(block.restSec, summary, def, next.setIndex === 0 ? nextName : `${nextName}, set ${next.setIndex + 1} of ${next.block.sets}`);
+        await rest(block.restSec, summary, def, next.setIndex === 0 ? nextName : `${nextName}, set ${next.setIndex + 1} of ${next.block.sets}`, award);
       }
     }
     if (!ended) await timedSteps('Cool-down', plan.cooldown);

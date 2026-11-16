@@ -17,8 +17,9 @@ import type { IconName } from './icons';
 import { installSteps, isStandalone, openInstallSheet } from './install';
 import { mascotSvg } from './mascot';
 import { trainingCards } from './train';
+import { pointsChips, refreshWorldNow, worldTab } from './world';
 
-type Tab = 'today' | 'me';
+type Tab = 'today' | 'world' | 'me';
 declare const __APP_VERSION__: string;
 
 function greeting(now = new Date()): string {
@@ -56,6 +57,7 @@ function todayTab(p: Profile): HTMLElement {
     'div',
     { class: 'tab-content' },
     h('h1', { class: 'page-title' }, greeting()),
+    pointsChips(),
     coachSays(
       mascotSvg('happy', 64),
       last ? 'Welcome back! Here is your plan.' : 'Your coaching is ready. Let us find your level first.',
@@ -91,8 +93,8 @@ function todayTab(p: Profile): HTMLElement {
         h('li', { class: 'done' }, icon('check'), h('span', null, 'Your profile and safety check')),
         h('li', { class: 'done' }, icon('check'), h('span', null, 'Camera rep counting for push-ups, with a voice coach')),
         h('li', { class: 'done' }, icon('check'), h('span', null, 'Twelve exercises and a 4-week plan that adapts to you')),
-        h('li', null, h('span', { class: 'dot' }), h('span', null, 'Points for every verified rep')),
-        h('li', null, h('span', { class: 'dot' }), h('span', null, 'Your pet and garden')),
+        h('li', { class: 'done' }, icon('check'), h('span', null, 'Points, a pet and a garden')),
+        h('li', null, h('span', { class: 'dot' }), h('span', null, 'Progress charts, badges and share cards')),
       ),
     ),
 
@@ -357,6 +359,7 @@ export function renderHome(root: HTMLElement): () => void {
   const content = h('main', { class: 'scroll home-scroll' });
   const tabs: { id: Tab; label: string; icon: IconName }[] = [
     { id: 'today', label: 'Today', icon: 'today' },
+    { id: 'world', label: 'World', icon: 'paw' },
     { id: 'me', label: 'Me', icon: 'person' },
   ];
   const tabButtons = tabs.map((t) =>
@@ -369,7 +372,9 @@ export function renderHome(root: HTMLElement): () => void {
     const p = getState().profile;
     if (!p) return;
     const keepScroll = animate ? 0 : content.scrollTop;
-    const view = tab === 'today' ? todayTab(p) : meTab(p);
+    // The world is brought up to date from the clock each time it is shown.
+    if (tab === 'world') refreshWorldNow();
+    const view = tab === 'today' ? todayTab(p) : tab === 'world' ? worldTab() : meTab(p);
     clear(content);
     content.appendChild(view);
     content.scrollTop = keepScroll;

@@ -9,6 +9,7 @@ import { EXERCISES, EXERCISE_IDS, placement, unit, type ExerciseDef, type Level 
 import { buildSession, levelFor, levelFromTest, sameDay, targetFor, weekIndexOf, weeklySplit, weekStart, type Progress, type SessionPlan } from '../plan/plan';
 import type { SaveData } from '../state/save';
 import type { SetSummary } from '../workout/setRunner';
+import { weeklyQuests } from '../economy/award';
 import { button, icon, openSheet, toast } from './components';
 import { exerciseDemo } from './demo';
 import { h } from './dom';
@@ -128,7 +129,7 @@ function runFitnessTest(p: Profile): void {
   const coach = new Coach({ voice: settings.voice, sound: settings.sound });
   coach.unlock();
   const set = (def: ExerciseDef, level: Level, label: string) =>
-    new Promise<SetSummary | null>((resolve) => void openWorkout({ def, level, goal: { kind: 'time', seconds: 60 }, mode: 'session', coach, label, onClose: resolve }));
+    new Promise<SetSummary | null>((resolve) => void openWorkout({ def, level, goal: { kind: 'time', seconds: 60 }, mode: 'session', coach, label, onClose: (summary) => resolve(summary) }));
 
   void (async () => {
     // Push-ups: knees or toes both count, and we note which.
@@ -264,6 +265,24 @@ export function trainingCards(p: Profile): HTMLElement[] {
       t.doneToday
         ? button(`Do another: ${t.plan.title}`, { block: true, variant: 'secondary', onClick: start })
         : button('Start session', { block: true, icon: 'camera', onClick: start }),
+    ),
+  );
+
+  cards.push(
+    h(
+      'div',
+      { class: 'card' },
+      h('h2', null, 'This week’s quests'),
+      ...weeklyQuests(state, p.daysPerWeek, new Date()).map((q) =>
+        h(
+          'div',
+          { class: `quest ${q.claimed ? 'claimed' : ''}` },
+          h('div', { class: 'quest-top' }, h('span', null, q.title), h('small', null, q.claimed ? 'Done ✓' : `+${q.reward} points`)),
+          h('div', { class: 'quest-bar' }, h('div', { style: `transform:scaleX(${(q.progress / q.goal).toFixed(3)})` })),
+          h('small', { class: 'muted' }, `${q.progress} of ${q.goal}`),
+        ),
+      ),
+      h('p', { class: 'muted small' }, 'Quests reset every Monday. Missing one costs nothing.'),
     ),
   );
 

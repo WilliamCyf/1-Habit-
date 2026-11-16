@@ -67,9 +67,10 @@ describe('damaged or edited saves', () => {
   });
 
   it('repairs missing sections with defaults', () => {
-    const result = loadSave(JSON.stringify({ version: 3 }), NOW);
+    const result = loadSave(JSON.stringify({ version: 4 }), NOW);
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data).toEqual(newSave(NOW));
+    // A bare save gets every default, except free starting water (that is only for new players).
+    if (result.ok) expect(result.data).toEqual({ ...newSave(NOW), can: 0 });
   });
 
   it('drops an invalid profile and un-finishes onboarding', () => {
@@ -92,7 +93,7 @@ describe('damaged or edited saves', () => {
 
   it('ignores unknown settings and strips unknown limits', () => {
     const odd = {
-      version: 3,
+      version: 4,
       settings: { units: 'furlongs', theme: 'neon', sound: 'loud' },
       draft: { limits: ['wrists', 'elbows'], age: 'old', weightKg: 70 },
     };
@@ -118,7 +119,7 @@ describe('real upgrade: version 1 to version 2', () => {
     const result = loadSave(JSON.stringify(v1), NOW);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.data.version).toBe(3);
+    expect(result.data.version).toBe(4);
     expect(result.data.progress).toEqual({});
     expect(result.data.fitness).toBeNull();
     expect(result.data.sessions).toEqual([]);
@@ -149,9 +150,9 @@ describe('workout history', () => {
   });
 
   it('keeps only the newest entries when the list is huge', () => {
-    const many = Array.from({ length: 3200 }, (_, i) => ({ ...set, reps: i % 50 }));
+    const many = Array.from({ length: 1700 }, (_, i) => ({ ...set, reps: i % 50 }));
     const data = sanitise({ ...finishedSave(), history: many } as unknown as Record<string, unknown>, NOW);
-    expect(data.history).toHaveLength(3000);
+    expect(data.history).toHaveLength(1500);
   });
 });
 
@@ -193,8 +194,11 @@ describe('training plan data (version 3)', () => {
     const result = loadSave(JSON.stringify(v2), NOW);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.version).toBe(3);
+      expect(result.data.version).toBe(4);
       expect(result.data.history).toHaveLength(1);
+      expect(result.data.ledger).toEqual([]);
+      expect(result.data.pet).toBeNull();
+      expect(result.data.plots).toHaveLength(2);
       expect(result.data.progress).toEqual({});
     }
   });
