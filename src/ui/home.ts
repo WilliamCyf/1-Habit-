@@ -16,8 +16,7 @@ import { ageField, bodyFields, experienceField, genderField, goalField, limitsFi
 import type { IconName } from './icons';
 import { installSteps, isStandalone, openInstallSheet } from './install';
 import { mascotSvg } from './mascot';
-import { pushupDemo } from './demo';
-import { openWorkout } from './workout';
+import { trainingCards } from './train';
 
 type Tab = 'today' | 'me';
 declare const __APP_VERSION__: string;
@@ -46,59 +45,6 @@ function linkRow(name: IconName, label: string, action: (() => void) | string, n
     : h('button', { class: 'link-row', type: 'button', onclick: action }, ...inner);
 }
 
-// --------------------------------------------------------- push-up set
-
-/** How many reps to aim for, by starting level. */
-function pushupTarget(level: 1 | 2 | 3): number {
-  return level === 1 ? 6 : level === 2 ? 8 : 12;
-}
-
-/** The screen before a set: demo, tips, and the Start button. */
-function openPushupIntro(p: Profile, level: 1 | 2 | 3): void {
-  const knees = level === 1;
-  const target = pushupTarget(level);
-  const demo = pushupDemo(knees);
-  const sheet = openSheet(knees ? 'Knee push-ups' : 'Push-ups', (s) =>
-    h(
-      'div',
-      { class: 'stack' },
-      h('div', { class: 'card demo-card' }, demo.element),
-      h('p', { class: 'target-line' }, h('strong', null, `${target} reps`), ' · counted by your camera'),
-      h(
-        'ul',
-        { class: 'tips' },
-        h('li', null, 'Hands under your shoulders, body in one straight line.'),
-        h('li', null, 'Lower your chest until your elbows bend to about a right angle.'),
-        h('li', null, 'Push back up until your arms are straight. About one second down, one second up.'),
-        knees ? h('li', null, 'Knees on the mat is a great way to start. On your toes counts too.') : null,
-        p.limits.includes('wrists') ? h('li', null, 'Sore wrists? Make fists and rest on your knuckles to keep your wrists straight.') : null,
-        p.limits.includes('shoulders') ? h('li', null, 'Protecting your shoulders: keep your elbows close to your sides, not flared out.') : null,
-      ),
-      h(
-        'p',
-        { class: 'muted small' },
-        'Place the phone side-on, about 2 m away, leaning against a wall. Turn your volume up: I will count out loud. Your own music can keep playing.',
-      ),
-      button('Start with camera', {
-        block: true,
-        icon: 'camera',
-        onClick: () => {
-          demo.stop();
-          s.close();
-          void openWorkout({ target, onClose: () => undefined });
-        },
-      }),
-      h('p', { class: 'muted small center' }, NOT_MEDICAL_ADVICE),
-    ),
-  );
-  // Stop the animation if the sheet is closed any other way.
-  const originalClose = sheet.close;
-  sheet.close = () => {
-    demo.stop();
-    originalClose();
-  };
-}
-
 // -------------------------------------------------------------- Today tab
 
 function todayTab(p: Profile): HTMLElement {
@@ -106,31 +52,16 @@ function todayTab(p: Profile): HTMLElement {
   const level = startLevel(p, state.health?.anyYes ?? false);
   const target = energyTarget(p);
   const last = state.history[state.history.length - 1];
-  const totalReps = state.history.reduce((sum, s) => sum + s.reps, 0);
   return h(
     'div',
     { class: 'tab-content' },
     h('h1', { class: 'page-title' }, greeting()),
     coachSays(
       mascotSvg('happy', 64),
-      last ? 'Welcome back! Ready for another set?' : 'Your first camera-counted set is ready. Shall we?',
+      last ? 'Welcome back! Here is your plan.' : 'Your coaching is ready. Let us find your level first.',
     ),
 
-    h(
-      'div',
-      { class: 'card workout-card' },
-      h('small', null, 'Camera workout'),
-      h('strong', null, level === 1 ? 'Knee push-ups' : 'Push-ups'),
-      h('p', { class: 'muted' }, `${pushupTarget(level)} reps. I count out loud, so you do not need to see the screen.`),
-      last
-        ? h(
-            'p',
-            { class: 'muted small' },
-            `Last set: ${last.reps} ${last.reps === 1 ? 'rep' : 'reps'}, form ${last.avgScore}. Total verified reps: ${formatNumber(totalReps)}.`,
-          )
-        : null,
-      button('Start', { block: true, icon: 'camera', onClick: () => openPushupIntro(p, level) }),
-    ),
+    ...trainingCards(p),
 
     h(
       'div',
@@ -159,8 +90,8 @@ function todayTab(p: Profile): HTMLElement {
         { class: 'roadmap' },
         h('li', { class: 'done' }, icon('check'), h('span', null, 'Your profile and safety check')),
         h('li', { class: 'done' }, icon('check'), h('span', null, 'Camera rep counting for push-ups, with a voice coach')),
-        h('li', null, h('span', { class: 'dot' }), h('span', null, 'More exercises')),
-        h('li', null, h('span', { class: 'dot' }), h('span', null, 'Fitness test and your 4-week plan')),
+        h('li', { class: 'done' }, icon('check'), h('span', null, 'Twelve exercises and a 4-week plan that adapts to you')),
+        h('li', null, h('span', { class: 'dot' }), h('span', null, 'Points for every verified rep')),
         h('li', null, h('span', { class: 'dot' }), h('span', null, 'Your pet and garden')),
       ),
     ),

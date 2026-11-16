@@ -1453,3 +1453,294 @@ h3 {
     transform: translate(-50%, -50%);
   }
 }
+
+/* ---------- training: plan card, library, exercise sheet ---------- */
+
+.week-dots {
+  display: flex;
+  gap: 6px;
+  margin: 2px 0 4px;
+}
+
+.week-dots span {
+  width: 22px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.week-dots span.done {
+  background: var(--mint);
+  box-shadow: none;
+}
+
+.plan-list,
+.ss-list {
+  display: flex;
+  flex-direction: column;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-list li,
+.ss-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.plan-list small,
+.ss-list small {
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.workout-card .text-btn {
+  align-self: center;
+  font-size: 15px;
+}
+
+.workout-card .text-btn:empty {
+  display: none;
+}
+
+.versions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.version {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.version small {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.version span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.version.current {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.version.current small {
+  color: var(--accent);
+}
+
+.center-text {
+  text-align: center;
+}
+
+.demo-canvas {
+  aspect-ratio: 320 / 190;
+}
+
+/* ---------- the session player (always dark, like the camera screen) ---------- */
+
+.session {
+  position: fixed;
+  inset: 0;
+  z-index: 14;
+  background: #060a08;
+  color: #eef6f0;
+  --text: #eef6f0;
+  --muted: #9fb3a8;
+  --surface: #16211c;
+  --surface-2: #1f2e27;
+  --line: #2b3d34;
+  --accent: #7cf2b0;
+  --accent-soft: rgba(124, 242, 176, 0.13);
+  --bg: #0d1512;
+}
+
+.ss-stage {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.ss-view {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 24px) calc(var(--safe-right) + 20px) calc(var(--safe-bottom) + 22px) calc(var(--safe-left) + 20px);
+  text-align: center;
+  justify-content: center;
+}
+
+.ss-view h2 {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.ss-pip {
+  line-height: 0;
+}
+
+.ss-kicker {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ss-how {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.ss-place {
+  align-self: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Big enough to read from across the room. */
+.ss-clock {
+  font-size: 128px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.ss-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.ss-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.25s linear;
+}
+
+.ss-view .ss-list,
+.ss-view .stat,
+.ss-notes {
+  text-align: left;
+}
+
+.ss-notes p {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.ss-end {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 15px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---------- additions to the camera screen ---------- */
+
+.wk-title {
+  position: absolute;
+  top: calc(var(--safe-top) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 44%;
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: rgba(6, 10, 8, 0.72);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.wk-title small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wk-title strong {
+  font-size: 15px;
+}
+
+.workout[data-phase='active'] .wk-title {
+  left: auto;
+  right: calc(var(--safe-right) + 66px);
+  top: calc(var(--safe-top) + 96px);
+  transform: none;
+  max-width: 40%;
+}
+
+.workout[data-phase='checkin'] .wk-checkin {
+  display: flex;
+}
+
+.wk-checkin {
+  background: rgba(255, 209, 102, 0.95);
+  color: #2b2000;
+  box-shadow: none;
+  text-align: center;
+}
+
+.wk-checkin > strong {
+  font-size: 26px;
+}
+
+.wk-checkin p {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.wk-checkin .wk-hint {
+  color: #5c4700;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.workout[data-phase='finished'] .wk-title,
+.workout[data-phase='error'] .wk-title {
+  display: none;
+}

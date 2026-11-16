@@ -12,7 +12,7 @@
 import { isCompleteProfile, LIMITS, type Limit, type Profile } from '../profile/profile';
 import type { UnitSystem } from '../profile/units';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export type ThemeChoice = 'system' | 'light' | 'dark';
 
@@ -41,6 +41,27 @@ export interface SetRecord {
   durationMs: number;
 }
 
+/** The result of the starter fitness test. */
+export interface FitnessTest {
+  at: string;
+  pushups: number;
+  pushupsOnKnees: boolean;
+  squats: number;
+  level: 1 | 2 | 3;
+}
+
+/** One finished workout session. */
+export interface SessionRecord {
+  at: string;
+  title: string;
+  focus: string;
+  minutes: number;
+  sets: number;
+  /** Total verified reps (hold seconds are not included). */
+  reps: number;
+  kcal: number;
+}
+
 /** Keep the newest sets only, so the save can never grow without limit. */
 export const MAX_HISTORY = 3000;
 
@@ -65,6 +86,13 @@ export interface SaveData {
   settings: Settings;
   /** Every finished set, oldest first. Added in save version 2. */
   history: SetRecord[];
+  /** Added in save version 3: the training plan's memory. */
+  fitness: FitnessTest | null;
+  /** Per exercise: which version the user is on, and how far the target has moved. */
+  progress: Record<string, { level: 1 | 2 | 3; steps: number }>;
+  /** When the four-week plan began (ISO date text). */
+  planStart: string | null;
+  sessions: SessionRecord[];
 }
 
 export function newSave(now: Date = new Date()): SaveData {
@@ -80,6 +108,10 @@ export function newSave(now: Date = new Date()): SaveData {
     draft: {},
     settings: { units: 'metric', theme: 'system', sound: true, voice: true },
     history: [],
+    fitness: null,
+    progress: {},
+    planStart: null,
+    sessions: [],
   };
 }
 
@@ -97,6 +129,8 @@ export const MIGRATIONS: Migrations = {
     history: [],
     settings: { ...(isObject(old.settings) ? old.settings : {}), voice: true },
   }),
+  // Version 3 added the training plan: fitness test, per-exercise progress, sessions.
+  2: (old) => ({ ...old, fitness: null, progress: {}, planStart: null, sessions: [] }),
 };
 
 export type LoadResult = { ok: true; data: SaveData } | { ok: false; reason: 'corrupt' | 'too-new' | 'no-path' };
@@ -175,6 +209,44 @@ function sanitiseHistory(value: unknown): SetRecord[] {
   return out;
 }
 
+const asLevel = (v: unknown): 1 | 2 | 3 => (v === 1 || v === 3 ? v : 2);
+
+function sanitiseFitness(value: unknown): FitnessTest | null {
+  if (!isObject(value) || typeof value.at !== 'string' || Number.isNaN(Date.parse(value.at))) return null;
+  const whole = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(500, Math.max(0, Math.round(v))) : 0);
+  return { at: value.at, pushups: whole(value.pushups), pushupsOnKnees: value.pushupsOnKnees === true, squats: whole(value.squats), level: asLevel(value.level) };
+}
+
+function sanitiseProgress(value: unknown): SaveData['progress'] {
+  const out: SaveData['progress'] = {};
+  if (!isObject(value)) return out;
+  for (const [id, item] of Object.entries(value).slice(0, 60)) {
+    if (!isObject(item) || id.length > 32) continue;
+    const steps = typeof item.steps === 'number' && Number.isFinite(item.steps) ? Math.min(8, Math.max(-3, Math.round(item.steps))) : 0;
+    out[id] = { level: asLevel(item.level), steps };
+  }
+  return out;
+}
+
+function sanitiseSessions(value: unknown): SessionRecord[] {
+  if (!Array.isArray(value)) return [];
+  const out: SessionRecord[] = [];
+  const whole = (v: unknown, max: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(0, Math.round(v))) : 0);
+  for (const item of value.slice(-MAX_HISTORY)) {
+    if (!isObject(item) || typeof item.at !== 'string' || Number.isNaN(Date.parse(item.at))) continue;
+    out.push({
+      at: item.at,
+      title: asString(item.title, 'Workout'),
+      focus: asString(item.focus, 'full'),
+      minutes: whole(item.minutes, 600),
+      sets: whole(item.sets, 200),
+      reps: whole(item.reps, 20000),
+      kcal: whole(item.kcal, 5000),
+    });
+  }
+  return out;
+}
+
 function sanitiseHealth(value: unknown, fallbackDate: string): HealthCheck | null {
   if (!isObject(value) || !Array.isArray(value.answers)) return null;
   const answers = value.answers.slice(0, 20).map((a) => a === true);
@@ -213,6 +285,10 @@ export function sanitise(raw: Loose, now: Date = new Date()): SaveData {
       voice: settings.voice !== false,
     },
     history: sanitiseHistory(raw.history),
+    fitness: sanitiseFitness(raw.fitness),
+    progress: sanitiseProgress(raw.progress),
+    planStart: typeof raw.planStart === 'string' && !Number.isNaN(Date.parse(raw.planStart)) ? raw.planStart : null,
+    sessions: sanitiseSessions(raw.sessions),
   };
 }
 

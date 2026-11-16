@@ -67,7 +67,7 @@ describe('damaged or edited saves', () => {
   });
 
   it('repairs missing sections with defaults', () => {
-    const result = loadSave(JSON.stringify({ version: 2 }), NOW);
+    const result = loadSave(JSON.stringify({ version: 3 }), NOW);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data).toEqual(newSave(NOW));
   });
@@ -92,7 +92,7 @@ describe('damaged or edited saves', () => {
 
   it('ignores unknown settings and strips unknown limits', () => {
     const odd = {
-      version: 2,
+      version: 3,
       settings: { units: 'furlongs', theme: 'neon', sound: 'loud' },
       draft: { limits: ['wrists', 'elbows'], age: 'old', weightKg: 70 },
     };
@@ -118,7 +118,10 @@ describe('real upgrade: version 1 to version 2', () => {
     const result = loadSave(JSON.stringify(v1), NOW);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.data.version).toBe(2);
+    expect(result.data.version).toBe(3);
+    expect(result.data.progress).toEqual({});
+    expect(result.data.fitness).toBeNull();
+    expect(result.data.sessions).toEqual([]);
     expect(result.data.profile).toEqual(profile);
     expect(result.data.onboardingDone).toBe(true);
     expect(result.data.history).toEqual([]);
@@ -149,6 +152,51 @@ describe('workout history', () => {
     const many = Array.from({ length: 3200 }, (_, i) => ({ ...set, reps: i % 50 }));
     const data = sanitise({ ...finishedSave(), history: many } as unknown as Record<string, unknown>, NOW);
     expect(data.history).toHaveLength(3000);
+  });
+});
+
+describe('training plan data (version 3)', () => {
+  it('survives a round trip', () => {
+    const save: SaveData = {
+      ...finishedSave(),
+      fitness: { at: NOW.toISOString(), pushups: 14, pushupsOnKnees: false, squats: 26, level: 2 },
+      progress: { squat: { level: 2, steps: 3 }, pushup: { level: 1, steps: -1 } },
+      planStart: NOW.toISOString(),
+      sessions: [{ at: NOW.toISOString(), title: 'Legs and glutes', focus: 'legs', minutes: 19, sets: 12, reps: 96, kcal: 110 }],
+    };
+    const result = loadSave(serialise(save), NOW);
+    expect(result.ok && result.data).toEqual(save);
+  });
+
+  it('repairs edited values instead of trusting them', () => {
+    const edited = {
+      ...finishedSave(),
+      fitness: { at: NOW.toISOString(), pushups: 99999, squats: -5, level: 9 },
+      progress: { squat: { level: 7, steps: 500 }, junk: 'x' },
+      planStart: 'yesterday-ish',
+      sessions: [{ at: NOW.toISOString(), reps: 1e12, kcal: -3 }, null],
+    };
+    const data = sanitise(edited as unknown as Record<string, unknown>, NOW);
+    expect(data.fitness).toMatchObject({ pushups: 500, squats: 0, level: 2 });
+    expect(data.progress).toEqual({ squat: { level: 2, steps: 8 } });
+    expect(data.planStart).toBeNull();
+    expect(data.sessions).toHaveLength(1);
+    expect(data.sessions[0]).toMatchObject({ reps: 20000, kcal: 0, title: 'Workout' });
+  });
+
+  it('upgrades a version 2 save without losing the set history', () => {
+    const v2 = { ...finishedSave(), version: 2, history: [{ at: NOW.toISOString(), exercise: 'pushup', variant: 'standard', reps: 8, target: 8, avgScore: 90, bestScore: 96, rejected: 0, durationMs: 20000 }] } as Record<string, unknown>;
+    delete v2.fitness;
+    delete v2.progress;
+    delete v2.planStart;
+    delete v2.sessions;
+    const result = loadSave(JSON.stringify(v2), NOW);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.version).toBe(3);
+      expect(result.data.history).toHaveLength(1);
+      expect(result.data.progress).toEqual({});
+    }
   });
 });
 

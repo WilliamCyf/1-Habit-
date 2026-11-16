@@ -311,6 +311,94 @@ the voice keeps at most one line waiting, lets a newer count replace an older
 one, and drops any line that has gone stale. Tips are not repeated more than
 once every three reps.
 
+## D28. The exercise library: twelve exercises, and three I left out
+
+**In:** push-up, squat, reverse lunge, glute bridge, sit-up, plank, mountain
+climber, jumping jack, high knees, bird-dog, good morning, burpee.
+
+**Out, and why:** you asked me to leave out anything the camera cannot track
+reliably.
+
+| Left out | Why |
+| --- | --- |
+| Superman | The chest and legs lift only a few centimetres. From the side that is smaller than the camera's own wobble. |
+| Reverse snow angels | Lying face-down, the arms sweep behind the body where a side camera cannot see them. |
+| Side plank | Half the body hides the other half, so the "is it straight?" check is guesswork. |
+
+**The pulling problem.** Bodyweight training with no bar and no weights has
+no pulling moves (rows, pull-ups), and pulling is what balances all the
+pushing and protects posture. So every session includes mat-based work for
+the back of the body, chosen because the camera sees it clearly:
+
+- **Glute bridge:** bottom and lower back. The hips rise a long way, easy to judge.
+- **Bird-dog:** the muscles along the spine, and balance. A big, slow reach.
+- **Good morning:** hamstrings and lower back, bowing from the hips.
+
+A test checks that every session the plan can ever produce contains one.
+
+## D29. How versions get harder
+
+For most exercises: beginner = a smaller range, standard = the full range,
+advanced = the full range with a pause or a slow lowering. Range, pauses and
+tempo are things the camera can verify, so the harder version cannot be
+claimed without doing it. A few have natural versions instead (knee push-up,
+knee plank, marching). Wide or diamond hand positions cannot be seen from the
+side, so they are offered as tips, not as verified versions.
+
+## D30. One counting engine, many exercises
+
+Most exercises are "a number leaves rest, reaches a peak, and returns". So
+there is one shared engine and each exercise supplies a short description:
+how to measure its number, the thresholds, and how to judge a rep. Timed
+holds and fast alternating moves (high knees) have their own small engines.
+
+A "confusion check" in the tests feeds every counter every other exercise and
+requires zero reps. That is how, for example, the squat counter was caught
+accepting lunges, and fixed by checking that the feet stay together.
+
+**Honest note:** these counters are built from geometry and tested on
+simulated bodies. Push-up, squat, plank, jacks and high knees are standard
+for this kind of tracking and I am confident in them. Mountain climbers and
+bird-dog are the two I am least sure of on a real body. Real-phone testing
+will tune the thresholds.
+
+## D31. The plan engine
+
+| Idea | How it works here |
+| --- | --- |
+| Weekly split | 2 days: full body twice. 3: push, legs, full. 4: push, legs, core, full. 5: adds cardio. 6: push, legs, core, push, legs, cardio. |
+| Flexible days | The plan is a list of sessions for the week, not fixed weekdays. Miss a day and nothing is "failed"; the next session is simply waiting. |
+| Session length | 10 min: 3 exercises x 2 sets. 15: 4 x 2. 20: 4 x 3. 30: 5 x 3. 45: 6 x 4. Trimmed until it fits. |
+| Progressive overload | Targets are x1.0, x1.1, x1.2 over three weeks. |
+| Deload | Week 4 is x0.7 with one set fewer, so the body can catch up. |
+| Goal | Muscle: fewer reps, 60 s rests. Fat loss and endurance: 30 s rests. Endurance: 20% more reps. General: 45 s rests. |
+| Auto-adjust | Hit every target with form 75+: next time is 5% harder. Fall under 60% of a target: 5% easier. Six steps up earns the next version. Three down drops back one. |
+| Sore areas | Exercises that load a protected area are swapped (squat to glute bridge for knees). All 16 combinations of limits are tested. |
+| Warm-up, cool-down | Always included, camera off. Short sessions get shorter ones so they do not eat the workout. |
+
+## D32. Sessions are hands-free
+
+After one tap on Start, the voice leads and every step moves on by itself:
+warm-up, "next exercise" with a demo, the set, the rest timer, the cool-down.
+You turn your body side-on or to face the phone; the phone never moves.
+The camera is on only during sets.
+
+## D33. Coach check-ins
+
+About one set in three (never the first) begins with "Coach check! Raise one
+hand above your head" or both hands. The set starts only when the camera sees
+it. A video of someone else doing push-ups cannot answer a request made at an
+unpredictable moment. Miss it for 20 seconds and that set is skipped. It
+happens before a set, standing up, never mid-exercise.
+
+## D34. The fitness test
+
+Most push-ups, then most squats, in 60 seconds each, with 40 seconds of rest.
+Knee push-ups count for 0.6 of a full one. Level 3 needs a score of 20 and 30
+squats; below 8 or 15 is level 1; otherwise level 2. People protecting their
+knees do glute bridges instead of squats. It can be skipped, and the plan
+then starts from the profile.
+
 ---
 
 ## Points economy table

@@ -1,20 +1,83 @@
-// The animated demo figure. Original art: a simple mannequin drawn on a
-// canvas from the same push-up model the tests use, so the demo always
-// shows exactly the movement the counter expects.
-import { pushupJoints, repElbow } from '../detectors/pushupModel';
+// The animated demo figures. Original art: a simple mannequin drawn on a
+// canvas from the same stick-figure models the tests use, so each demo
+// shows exactly the movement its counter expects.
+import type { ExerciseDef, Level } from '../exercises/library';
+import type { Body, Limbs } from '../exercises/models';
 
 export interface DemoHandle {
   element: HTMLCanvasElement;
   stop(): void;
 }
 
-export function pushupDemo(knees: boolean): DemoHandle {
+const W = 320;
+const H = 190;
+
+function drawBody(ctx: CanvasRenderingContext2D, body: Body, ink: string, dpr: number): void {
+  // Model space: y from about 0.24 (head) to 0.90 (floor). One scale for both
+  // directions, so the figure is not stretched.
+  const scale = (H / 0.7) * dpr;
+  const offsetX = (W * dpr - 1.0 * scale) / 2 + (body.view === 'side' ? -0.02 * scale : 0);
+  const sx = (x: number) => offsetX + x * scale;
+  const sy = (y: number) => (y - 0.22) * scale;
+  ctx.clearRect(0, 0, W * dpr, H * dpr);
+
+  // the mat
+  ctx.strokeStyle = '#ff7a6b';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 5 * dpr;
+  ctx.beginPath();
+  ctx.moveTo(sx(body.view === 'side' ? 0.1 : 0.25), sy(0.885));
+  ctx.lineTo(sx(body.view === 'side' ? 0.92 : 0.75), sy(0.885));
+  ctx.stroke();
+
+  const limb = (l: Limbs, colour: string, armColour: string, width: number) => {
+    ctx.lineWidth = width * dpr;
+    ctx.strokeStyle = colour;
+    ctx.beginPath();
+    ctx.moveTo(sx(l.ankle.x), sy(l.ankle.y));
+    ctx.lineTo(sx(l.knee.x), sy(l.knee.y));
+    ctx.lineTo(sx(l.hip.x), sy(l.hip.y));
+    ctx.stroke();
+    ctx.strokeStyle = armColour;
+    ctx.lineWidth = (width - 2) * dpr;
+    ctx.beginPath();
+    ctx.moveTo(sx(l.shoulder.x), sy(l.shoulder.y));
+    ctx.lineTo(sx(l.elbow.x), sy(l.elbow.y));
+    ctx.lineTo(sx(l.wrist.x), sy(l.wrist.y));
+    ctx.stroke();
+  };
+
+  if (body.view === 'side') {
+    // Far side first and fainter, so it sits "behind" the near side.
+    ctx.globalAlpha = 0.38;
+    limb(body.far, ink, ink, 9);
+    ctx.globalAlpha = 1;
+  }
+  // torso
+  const shoulder = body.view === 'front' ? { x: (body.near.shoulder.x + body.far.shoulder.x) / 2, y: body.near.shoulder.y } : body.near.shoulder;
+  const hip = body.view === 'front' ? { x: (body.near.hip.x + body.far.hip.x) / 2, y: body.near.hip.y } : body.near.hip;
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = (body.view === 'front' ? 22 : 12) * dpr;
+  ctx.beginPath();
+  ctx.moveTo(sx(hip.x), sy(hip.y));
+  ctx.lineTo(sx(shoulder.x), sy(shoulder.y));
+  ctx.stroke();
+  limb(body.near, ink, '#4fd693', 11);
+  if (body.view === 'front') limb(body.far, ink, '#4fd693', 11);
+  // head
+  ctx.fillStyle = ink;
+  ctx.beginPath();
+  ctx.arc(sx(body.head.x), sy(body.head.y), 11 * dpr, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** An endlessly looping demo of one exercise at one level. */
+export function exerciseDemo(def: ExerciseDef, level: Level): DemoHandle {
   const canvas = document.createElement('canvas');
   canvas.className = 'demo-canvas';
   canvas.setAttribute('role', 'img');
-  canvas.setAttribute('aria-label', knees ? 'Animation of a knee push-up' : 'Animation of a push-up');
-  const W = 320;
-  const H = 150;
+  canvas.setAttribute('aria-label', `Animation of the ${def.versions[level - 1]!.name.toLowerCase()}`);
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = W * dpr;
   canvas.height = H * dpr;
@@ -23,58 +86,21 @@ export function pushupDemo(knees: boolean): DemoHandle {
   let stopped = false;
   const started = performance.now();
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Show the demo a little slower than real life, so it is easy to follow.
+  const repSec = Math.max(1.6, def.repSec(level) * 1.15);
 
-  function draw(now: number): void {
+  function frame(now: number): void {
     if (stopped) return;
-    // Stop by itself once the canvas is no longer on the page, or the app
-    // is hidden: an animation nobody can see only wastes battery.
-    if (!canvas.isConnected && now - started > 500) return;
+    // Stop by itself once the canvas has left the page: an animation nobody
+    // can see only wastes battery.
+    if (!canvas.isConnected && now - started > 600) return;
     if (!document.hidden) {
-      const repSec = 2.6;
       const phase = still ? 0.5 : (((now - started) / 1000) % repSec) / repSec;
-      const j = pushupJoints({ elbowDeg: repElbow(phase, 166, 82), knees, size: 0.66 });
-      const ink = getComputedStyle(canvas).color;
-      // Map model space (x 0.1..1.0, y 0.3..0.85) onto the canvas.
-      const sx = (x: number) => (x - 0.08) * (W / 0.92) * dpr;
-      const sy = (y: number) => (y - 0.32) * (H / 0.52) * dpr;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // the mat
-      ctx.strokeStyle = '#ff7a6b';
-      ctx.lineCap = 'round';
-      ctx.lineWidth = 5 * dpr;
-      ctx.beginPath();
-      ctx.moveTo(sx(0.12), sy(0.815));
-      ctx.lineTo(sx(0.98), sy(0.815));
-      ctx.stroke();
-
-      // body: one thick rounded line through the joints
-      ctx.strokeStyle = ink;
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = 13 * dpr;
-      ctx.beginPath();
-      ctx.moveTo(sx(j.ankle.x), sy(j.ankle.y));
-      ctx.lineTo(sx(j.knee.x), sy(j.knee.y));
-      ctx.lineTo(sx(j.hip.x), sy(j.hip.y));
-      ctx.lineTo(sx(j.shoulder.x), sy(j.shoulder.y));
-      ctx.stroke();
-      // arm, in the accent colour so the eye follows the elbow
-      ctx.strokeStyle = '#4fd693';
-      ctx.lineWidth = 10 * dpr;
-      ctx.beginPath();
-      ctx.moveTo(sx(j.shoulder.x), sy(j.shoulder.y));
-      ctx.lineTo(sx(j.elbow.x), sy(j.elbow.y));
-      ctx.lineTo(sx(j.wrist.x), sy(j.wrist.y));
-      ctx.stroke();
-      // head
-      ctx.fillStyle = ink;
-      ctx.beginPath();
-      ctx.arc(sx(j.head.x), sy(j.head.y), 12 * dpr, 0, Math.PI * 2);
-      ctx.fill();
+      drawBody(ctx, def.body(def.kind === 'hold' ? 0 : phase, level), getComputedStyle(canvas).color, dpr);
     }
-    if (!still) raf = requestAnimationFrame(draw);
+    if (!still) raf = requestAnimationFrame(frame);
   }
-  raf = requestAnimationFrame(draw);
+  raf = requestAnimationFrame(frame);
 
   return {
     element: canvas,

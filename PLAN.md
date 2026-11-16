@@ -6,9 +6,9 @@ to earn points, and points keep a little pet and garden alive.
 
 This file is the map. Read the "Where we are" box first.
 
-> **Where we are:** Milestones 0 to 2 are built and live. You asked me to
+> **Where we are:** Milestones 0 to 3 are built and live. You asked me to
 > keep building without waiting for a test after each milestone, so I am
-> continuing with Milestone 3 (the plan engine and more exercises).
+> continuing with Milestone 4 (points, shop, pet and garden).
 >
 > **Only a real iPhone can confirm these, whenever you have a moment:**
 > 1. Do real push-ups count correctly? (Today → Start. Tap the big number
@@ -90,20 +90,21 @@ then I wait for your feedback.
 | M0 | Camera check | **Passed.** 15 looks per second, 19 ms think time, no heat slowdown in 5 minutes. |
 | M1 | App shell, onboarding, profile, install | **Built.** Setup, health check, calorie estimates, offline, backups. |
 | M2 | Push-up detector, anti-cheat v1, camera screen, voice coach | **Built.** 34 replayed recordings prove honest reps count and fakes do not. Needs a real-body check. |
-| **M3** | **Plan engine and the other exercises (now)** | A 4-week plan appears, every exercise has a demo and a reliable counter. |
+| **M3** | **Plan engine and the other exercises (built)** | A 4-week plan appears, every exercise has a demo and a reliable counter. |
 | M4 | Points, shop, pet and garden | Reps earn points, points feed the pet and grow the garden. |
 | M5 | Polish: sound, share cards, progress, achievements | It feels like a studio-made app. |
 | M6 | Speed and heat hardening | 15-minute workout: smooth, cool enough, no bugs. |
 
-### Exercises I expect to track reliably (final list decided by testing in M3)
+### The exercise library (built in M3)
 
-Side-on camera: push-up family (knee, standard, wide, diamond), squat, reverse
-lunge, glute bridge, sit-up, plank, mountain climbers, burpee, superman,
-bird-dog. Front-on camera: jumping jacks, high knees, side plank.
+Side-on to the phone: push-up, squat, reverse lunge, glute bridge, sit-up,
+plank, mountain climber, bird-dog, good morning, burpee. Facing the phone:
+jumping jack, high knees. Each has a beginner, standard and advanced version.
 
-Reverse snow angels are a "maybe": lying face-down, the arms hide behind the
-body from a side view. If testing shows the count is unreliable, it is left
-out, as you asked.
+Left out because the camera cannot judge them reliably: superman and reverse
+snow angels (the lift is too small to measure) and side plank (the body hides
+itself). Bird-dog, glute bridge and good morning do the back and posture work
+instead. Reasons are in DECISIONS.md, D28.
 
 ### Anti-cheat layers (built in M2 and M4)
 

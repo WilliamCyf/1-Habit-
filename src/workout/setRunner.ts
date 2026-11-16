@@ -1,18 +1,18 @@
-// Runs one camera-tracked set from start to finish.
+// Runs one camera-tracked set from start to finish, for any exercise.
 //
 // It is the conductor: it owns the camera, the tracker, the pacer, the
-// governor and the push-up detector, and tells the screen what happened
+// governor and the exercise's detector, and tells the screen what happened
 // through callbacks. It contains no drawing code, so the screen file stays
 // simple.
 //
 // A set moves through these phases:
 //
-//   loading → position → countdown → active → finished
-//                 ▲           │         │
-//                 └── moved ──┘         └── app hidden → paused → position
+//   loading → (check-in) → position → countdown → active → finished
+//                              ▲           │         │
+//                              └── moved ──┘         └── app hidden → paused → position
 //
-import { PushupDetector, type PushupView } from '../detectors/pushup';
-import type { Cue, RejectEvent, RejectReason, RepEvent, Variant } from '../detectors/types';
+import { readSkeleton } from '../detectors/joints';
+import type { Cue, Detector, HoldEvent, LiveView, RejectEvent, RejectReason, RepEvent } from '../detectors/types';
 import { FramePacer } from '../perf/pacer';
 import { Governor } from '../perf/governor';
 import { RollingStats } from '../perf/stats';
@@ -23,17 +23,25 @@ import type { Landmark } from '../pose/landmarks';
 import { getSharedTracker } from '../pose/sharedTracker';
 import type { PoseTracker } from '../pose/tracker';
 
-export type SetPhase = 'loading' | 'position' | 'countdown' | 'active' | 'paused' | 'finished' | 'error';
-export type EndReason = 'target' | 'stopped' | 'left' | 'idle';
+export type SetPhase = 'loading' | 'checkin' | 'position' | 'countdown' | 'active' | 'paused' | 'finished' | 'error';
+export type EndReason = 'target' | 'time' | 'stopped' | 'left' | 'idle' | 'checkin-failed';
+
+/** Either "do this many" or "do as many as you can in this many seconds". */
+export type SetGoal = { kind: 'count'; target: number } | { kind: 'time'; seconds: number };
+
+/** A coach check-in: a gesture only a live person can answer. */
+export type CheckIn = 'one-hand' | 'both-hands';
 
 export interface SetSummary {
-  reps: number;
+  /** Verified reps, or valid seconds for a hold. */
+  count: number;
   target: number;
   avgScore: number;
   bestScore: number;
   rejected: number;
   rejects: Partial<Record<RejectReason, number>>;
-  variant: Variant;
+  /** The version actually performed most often. */
+  variant: string;
   /** Time spent actually doing the set, pauses not included. */
   durationMs: number;
   endedBy: EndReason;
@@ -41,26 +49,18 @@ export interface SetSummary {
   mainCue: Cue | null;
 }
 
-export interface SetDebug {
-  looksPerSec: number;
-  inferMs: number;
-  targetFps: number;
-  phase: SetPhase;
-  detectorPhase: string;
-  elbow: number | null;
-  line: number | null;
-  lastReject: string;
-  dark: boolean;
-}
-
 export interface SetCallbacks {
   onPhase(phase: SetPhase): void;
   /** Every analysed frame: for the skeleton and the checklist. */
-  onFrame(view: PushupView, pose: readonly Landmark[] | null): void;
+  onFrame(view: LiveView, pose: readonly Landmark[] | null): void;
   onCountdown(secondsLeft: number): void;
-  onRep(rep: RepEvent, target: number): void;
+  /** A rep was counted, or another second of a hold was completed. */
+  onProgress(count: number, event: RepEvent | HoldEvent): void;
   onReject(reject: RejectEvent): void;
   onCue(cue: Cue): void;
+  /** Timed sets only: whole seconds remaining. */
+  onClock(secondsLeft: number): void;
+  onCheckIn(result: 'passed' | 'failed'): void;
   /** The camera picture changed shape (first frame, or the phone was rotated). */
   onLayout(): void;
   onFinish(summary: SetSummary): void;
@@ -68,7 +68,9 @@ export interface SetCallbacks {
 }
 
 export interface SetOptions {
-  target: number;
+  detector: Detector;
+  goal: SetGoal;
+  checkIn?: CheckIn | null;
   facing?: Facing;
   /**
    * Development only: supplies made-up poses instead of the real tracker,
@@ -81,12 +83,14 @@ export interface SetOptions {
 const COUNTDOWN_FROM = 3;
 /** End the set if nothing has counted for this long. */
 const IDLE_MS = 30_000;
+const CHECKIN_TIMEOUT_MS = 20_000;
+const CHECKIN_HOLD_MS = 400;
 
 export class SetRunner {
   private phase: SetPhase = 'loading';
   private camera: CameraHandle | null = null;
   private tracker: PoseTracker | null = null;
-  private readonly detector = new PushupDetector();
+  private readonly detector: Detector;
   private readonly pacer = new FramePacer(15);
   private readonly governor = new Governor();
   private readonly wakeLock = new WakeLock();
@@ -97,54 +101,50 @@ export class SetRunner {
 
   private readonly reps: RepEvent[] = [];
   private readonly rejects: RejectEvent[] = [];
+  private lastHold: HoldEvent | null = null;
+  private count = 0;
   private countdownStart = 0;
   private countdownShown = -1;
   private activeMs = 0;
   private activeSince = 0;
   private lastProgressAt = 0;
+  private clockShown = -1;
   private disposed = false;
   private errors = 0;
   private lastLightCheck = 0;
   private dark = false;
   private lightCanvas: HTMLCanvasElement | null = null;
+  private checkInDone: boolean;
+  private checkInStart = 0;
+  private checkInSince: number | null = null;
 
   constructor(
     private readonly video: HTMLVideoElement,
     private readonly options: SetOptions,
     private readonly cb: SetCallbacks,
   ) {
+    this.detector = options.detector;
+    this.checkInDone = !options.checkIn;
     this.loop = new FrameLoop(video, (now) => this.onFrame(now));
     document.addEventListener('visibilitychange', this.onVisibility);
     window.addEventListener('pagehide', this.onPageHide);
     video.addEventListener('resize', this.onVideoResize);
   }
 
-  get currentPhase(): SetPhase {
-    return this.phase;
-  }
-
-  get repCount(): number {
-    return this.reps.length;
-  }
-
   get isDark(): boolean {
     return this.dark;
   }
 
-  get debug(): SetDebug {
+  get target(): number {
+    return this.options.goal.kind === 'count' ? this.options.goal.target : this.options.goal.seconds;
+  }
+
+  /** One line for the hidden debug overlay. */
+  get debugText(): string {
     const gap = this.gapStats.mean();
-    const view = this.detector.view;
-    return {
-      looksPerSec: gap > 0 ? 1000 / gap : 0,
-      inferMs: this.inferStats.mean(),
-      targetFps: this.governor.fps,
-      phase: this.phase,
-      detectorPhase: view.phase,
-      elbow: view.elbowDeg,
-      line: view.lineDeg,
-      lastReject: view.lastReject ?? '-',
-      dark: this.dark,
-    };
+    return `${(gap > 0 ? 1000 / gap : 0).toFixed(1)}/s (goal ${this.governor.fps}) · ${this.inferStats.mean().toFixed(0)} ms · ${this.phase}${
+      this.dark ? ' · dark' : ''
+    }\n${this.detector.view.debug}`;
   }
 
   /** Open the camera and the tracker together, then wait for the start position. */
@@ -251,7 +251,9 @@ export class SetRunner {
   private beginPositioning(): void {
     this.pacer.reset();
     this.lastInferAt = 0;
-    this.setPhase('position');
+    this.checkInStart = 0;
+    this.checkInSince = null;
+    this.setPhase(this.checkInDone ? 'position' : 'checkin');
     this.loop.start();
     void this.wakeLock.acquire();
   }
@@ -278,21 +280,31 @@ export class SetRunner {
   }
 
   private summary(endedBy: EndReason): SetSummary {
-    const scores = this.reps.map((r) => r.score);
     const rejects: Partial<Record<RejectReason, number>> = {};
     for (const r of this.rejects) rejects[r.reason] = (rejects[r.reason] ?? 0) + 1;
     const cueCounts = new Map<Cue, number>();
     for (const r of this.reps) if (r.cue !== 'nice') cueCounts.set(r.cue, (cueCounts.get(r.cue) ?? 0) + 1);
     const mainCue = [...cueCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    const knee = this.reps.filter((r) => r.variant === 'knee').length;
+    const variants = new Map<string, number>();
+    for (const r of this.reps) variants.set(r.variant, (variants.get(r.variant) ?? 0) + 1);
+    const variant = [...variants.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'standard';
+    let avgScore = 0;
+    let bestScore = 0;
+    if (this.reps.length) {
+      const scores = this.reps.map((r) => r.score);
+      avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+      bestScore = Math.max(...scores);
+    } else if (this.lastHold) {
+      avgScore = bestScore = this.lastHold.score;
+    }
     return {
-      reps: this.reps.length,
-      target: this.options.target,
-      avgScore: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
-      bestScore: scores.length ? Math.max(...scores) : 0,
+      count: this.count,
+      target: this.target,
+      avgScore,
+      bestScore,
       rejected: this.rejects.length,
       rejects,
-      variant: knee > this.reps.length / 2 ? 'knee' : 'standard',
+      variant,
       durationMs: Math.round(this.activeMs),
       endedBy,
       mainCue,
@@ -302,7 +314,8 @@ export class SetRunner {
   // ------------------------------------------------------------ frame loop
 
   private onFrame(now: number): void {
-    if (!this.tracker || (this.phase !== 'position' && this.phase !== 'countdown' && this.phase !== 'active')) return;
+    const live = this.phase === 'checkin' || this.phase === 'position' || this.phase === 'countdown' || this.phase === 'active';
+    if (!this.tracker || !live) return;
     if (!this.pacer.shouldProcess(now)) return;
 
     const t0 = performance.now();
@@ -323,6 +336,14 @@ export class SetRunner {
     if (newFps !== null) this.pacer.setTargetFps(newFps);
 
     const aspect = this.video.videoHeight ? this.video.videoWidth / this.video.videoHeight : 4 / 3;
+
+    if (this.phase === 'checkin') {
+      this.checkLight(t0);
+      this.runCheckIn(pose, aspect, t0);
+      this.cb.onFrame(this.detector.view, pose);
+      return;
+    }
+
     const events = this.detector.update({ t: t0, pose, aspect });
     const view = this.detector.view;
 
@@ -334,7 +355,7 @@ export class SetRunner {
         this.setPhase('countdown');
       }
     } else if (this.phase === 'countdown') {
-      if (!view.tracking || !view.horizontal || !view.handsDown) {
+      if (!view.tracking || !view.checks[1]?.ok) {
         // Moved out of position: back to the checklist.
         this.setPhase('position');
       } else {
@@ -354,8 +375,14 @@ export class SetRunner {
       for (const event of events) {
         if (event.type === 'rep') {
           this.reps.push(event);
+          this.count = event.count;
           this.lastProgressAt = t0;
-          this.cb.onRep(event, this.options.target);
+          this.cb.onProgress(this.count, event);
+        } else if (event.type === 'hold') {
+          this.lastHold = event;
+          this.count = event.seconds;
+          this.lastProgressAt = t0;
+          this.cb.onProgress(this.count, event);
         } else if (event.type === 'reject') {
           this.rejects.push(event);
           this.lastProgressAt = t0;
@@ -368,17 +395,63 @@ export class SetRunner {
           return;
         }
       }
-      if (this.reps.length >= this.options.target) {
-        this.cb.onFrame(view, pose);
-        this.finish('target');
-        return;
-      }
-      if (t0 - this.lastProgressAt > IDLE_MS) {
-        this.finish('idle');
-        return;
+      const goal = this.options.goal;
+      if (goal.kind === 'count') {
+        if (this.count >= goal.target) {
+          this.cb.onFrame(view, pose);
+          this.finish('target');
+          return;
+        }
+        if (t0 - this.lastProgressAt > IDLE_MS) {
+          this.finish('idle');
+          return;
+        }
+      } else {
+        const left = Math.ceil(goal.seconds - (this.activeMs + (t0 - this.activeSince)) / 1000);
+        if (left !== this.clockShown) {
+          this.clockShown = left;
+          this.cb.onClock(Math.max(0, left));
+        }
+        if (left <= 0) {
+          this.cb.onFrame(view, pose);
+          this.finish('time');
+          return;
+        }
       }
     }
     this.cb.onFrame(view, pose);
+  }
+
+  /**
+   * The coach check-in: wait for a raised hand (or both). A recording of
+   * someone else exercising cannot answer a request made at a random moment.
+   */
+  private runCheckIn(pose: readonly Landmark[] | null, aspect: number, t: number): void {
+    if (!this.checkInStart) this.checkInStart = t;
+    let ok = false;
+    if (pose) {
+      const sk = readSkeleton(pose, aspect);
+      // "Above the head" = above the nose if we can see it, otherwise well above the shoulder.
+      const up = (wrist: typeof sk.left.wrist, shoulder: typeof sk.left.shoulder) =>
+        wrist.v >= 0.5 && (sk.nose.v >= 0.5 ? wrist.y < sk.nose.y - 0.02 : shoulder.v >= 0.5 && wrist.y < shoulder.y - 0.12);
+      const left = up(sk.left.wrist, sk.left.shoulder);
+      const right = up(sk.right.wrist, sk.right.shoulder);
+      ok = this.options.checkIn === 'both-hands' ? left && right : left || right;
+    }
+    if (ok) {
+      this.checkInSince ??= t;
+      if (t - this.checkInSince >= CHECKIN_HOLD_MS) {
+        this.checkInDone = true;
+        this.cb.onCheckIn('passed');
+        this.setPhase('position');
+      }
+    } else {
+      this.checkInSince = null;
+      if (t - this.checkInStart > CHECKIN_TIMEOUT_MS) {
+        this.cb.onCheckIn('failed');
+        this.finish('checkin-failed');
+      }
+    }
   }
 
   /**

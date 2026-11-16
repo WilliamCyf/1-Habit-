@@ -50,6 +50,22 @@ export class Coach {
     this.say(tip ? `${count}. ${tip}.` : String(count), 'count');
   }
 
+  /** Another stretch of a timed hold done: a soft tick, and the time every 5 seconds. */
+  holdSecond(seconds: number, target: number): void {
+    if (seconds % 5 !== 0 && seconds !== target) return;
+    if (this.settings.sound) void playTones([{ freq: 660, at: 0, dur: 0.08 }], 0.18);
+    if (seconds < target) this.say(String(seconds), 'count');
+  }
+
+  /** A timed set's clock: speak the milestones only. */
+  clock(secondsLeft: number): void {
+    if (secondsLeft === 30 || secondsLeft === 10) this.say(`${secondsLeft} seconds`, 'count');
+    else if (secondsLeft > 0 && secondsLeft <= 3) {
+      if (this.settings.sound) void playTones([{ freq: 784, at: 0, dur: 0.1 }], 0.22);
+      this.say(String(secondsLeft), 'count');
+    }
+  }
+
   /** A movement that did not count: a soft low tone and the reason. */
   reject(cue: Cue): void {
     if (this.settings.sound) void playTones([{ freq: 196, at: 0, dur: 0.18 }], 0.2);
@@ -62,6 +78,11 @@ export class Coach {
 
   countdown(n: number): void {
     if (this.settings.sound) void playTones([{ freq: n === 0 ? 1175 : 784, at: 0, dur: n === 0 ? 0.35 : 0.12 }], 0.25);
+  }
+
+  /** A short pleasant two-note "ding", e.g. when a coach check-in is passed. */
+  ding(): void {
+    if (this.settings.sound) void playTones([{ freq: 988, at: 0, dur: 0.1 }, { freq: 1319, at: 0.1, dur: 0.18 }], 0.22);
   }
 
   fanfare(): void {

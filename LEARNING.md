@@ -248,6 +248,26 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 - **Callback:** a function you hand to other code, saying "call this when
   something happens". The set controller tells the screen about reps this way.
 
+### Planning and sessions (Milestone 3)
+
+- **Spec (specification):** a short description that tells shared code how
+  to behave for one case. Each exercise is a spec for the counting engine.
+- **Interface:** an agreed shape that different parts all follow. Every
+  detector has the same four "plugs", so the screen can run any of them
+  without knowing which exercise it is. Like every lamp fitting the same socket.
+- **Inverse kinematics:** working out where a knee must be if you know where
+  the hip and the foot are. Used to draw the demo figures.
+- **Progressive overload:** asking the body for slightly more each week.
+- **Deload:** a planned easier week so the body can recover and adapt.
+- **Split:** dividing the week so different areas work on different days.
+- **Confusion matrix:** a test that tries every counter against every
+  exercise, to prove a squat is never counted as a lunge.
+- **Random:** unpredictable on purpose. Coach check-ins use it so a
+  recording cannot anticipate them.
+- **async / await in a flow:** the session is written like a recipe ("await
+  the warm-up, await the set, await the rest"), even though each step takes
+  minutes and waits for you.
+
 ### Tools
 
 - **npm:** the app store for code libraries. `npm install` downloads them.
@@ -260,7 +280,7 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 - **Dynamic import:** loading a piece of code only at the moment it is needed.
   The tracking library is not downloaded until you start the camera.
 - **Unit test:** a tiny automated check of one piece of logic, such as "does
-  the pacer really pick 15 of 30 frames?". We have 78 so far.
+  the pacer really pick 15 of 30 frames?". We have 335 so far.
 - **End-to-end test:** a robot opens the real page in a real browser and
   clicks through it. I do this with a fake camera feed.
 - **GitHub Actions (CI):** a robot on GitHub that runs the tests and publishes
@@ -359,3 +379,37 @@ recordings into the counter. Honest ones must count exactly, at 10, 15 and 30
 looks per second, with jitter, facing either way. Every kind of fake must
 score zero. If a future change breaks any of that, the tests fail and the
 app is not published.
+
+### Lesson 3: write it once
+
+Milestone 2 had one hand-written counter. Milestone 3 needed eleven more.
+Copying it eleven times would mean eleven places to fix every future bug.
+
+So the common story went into one engine (`src/detectors/repEngine.ts`), and
+each exercise became a short description in `src/exercises/library.ts`. A
+squat, roughly:
+
+- measure the knee angle
+- resting is 158° or more, a rep starts below 150°, deep enough is 102°
+- the hip must really travel, the feet must stay put
+- score it on depth, chest position and tempo
+
+That is about 40 lines instead of 400. Fix the engine once and all ten
+exercises that use it are fixed.
+
+The session player (`src/ui/session.ts`) uses the same idea for time. Its
+main function reads like a recipe: await the warm-up, then for each set await
+the intro, await the set, await the rest. The word `await` means "start this
+and come back here when it finishes", so a 20-minute session is written as
+twenty-odd lines in the order things happen.
+
+The plan engine's weekly growth is simple arithmetic:
+
+```
+                         base reps  x  week factor  x  goal factor
+  target for a set  =  ─────────────────────────────────────────────
+                                           1
+```
+
+With week factors of 1.0, 1.1, 1.2 and then 0.7 for the easier fourth week.
+A base of 12 squats becomes 12, 13, 14, then 8.

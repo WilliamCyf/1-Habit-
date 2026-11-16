@@ -155,6 +155,7 @@ type Phase = 'top' | 'down' | 'bottom';
 
 interface RepTrack {
   startT: number;
+  bottomT: number;
   bottomReached: boolean;
   minElbow: number;
   minLine: number;
@@ -215,6 +216,12 @@ export class PushupDetector {
   private elbowNow: number | null = null;
   private lineNow: number | null = null;
   private readyProgress = 0;
+
+  /**
+   * @param minDownMs  for the "slow push-up" version: lowering must take at
+   *                   least this long, or the rep is not counted.
+   */
+  constructor(private readonly minDownMs = 0) {}
 
   /** Begin counting reps. Before this, the detector only checks the start position. */
   startCounting(): void {
@@ -331,6 +338,7 @@ export class PushupDetector {
         this.phase = 'down';
         this.rep = {
           startT: t,
+          bottomT: 0,
           bottomReached: false,
           minElbow: elbow,
           minLine: line,
@@ -391,6 +399,7 @@ export class PushupDetector {
     if (this.phase === 'down' && elbow <= PUSHUP.downDeg) {
       this.phase = 'bottom';
       rep.bottomReached = true;
+      rep.bottomT = t;
     }
 
     if (elbow >= PUSHUP.upDeg) {
@@ -452,6 +461,7 @@ export class PushupDetector {
       return;
     }
     if (durationMs < PUSHUP.minRepMs) return this.fail(events, 'too-fast', 'slow-down');
+    if (rep.bottomT - rep.startT < this.minDownMs) return this.fail(events, 'too-fast', 'slow-down');
     if (rep.horizontalFrames / Math.max(1, rep.frames) < 0.8) return this.fail(events, 'not-horizontal', 'get-horizontal');
     if (shift > PUSHUP.maxPlantedShift) return this.fail(events, 'moved', 'keep-still');
     const drop = (rep.maxShoulderY - rep.shoulderY0) / rep.bodyLen;
