@@ -4,7 +4,7 @@ A no-equipment home workout coach for iPhone. The camera counts every rep, so
 reps cannot be faked. Verified reps earn points, and points keep a little pet
 and garden alive.
 
-**Status:** Milestone 4 of 6. See [PLAN.md](PLAN.md) for the road ahead.
+**Status:** Milestone 5 of 6. See [PLAN.md](PLAN.md) for the road ahead.
 
 What works today:
 
@@ -18,9 +18,8 @@ What works today:
 - A 2-minute fitness test to place you at the right level
 - Points for every verified rep, with streaks, weekly quests and personal records
 - A pet (four species to choose from) and a garden, cared for with those points
+- Progress charts, personal records, 18 badges and shareable result cards
 - The camera check (tracking and sound diagnostics)
-
-Not built yet: progress charts, badges, share cards.
 
 **Live link:** https://williamcyf.github.io/1-Habit-/
 

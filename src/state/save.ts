@@ -15,7 +15,7 @@ import { verify, type LedgerEntry } from '../economy/ledger';
 import { ITEM, MAX_PLOTS, PLANTS, SPECIES, type PlantId, type SpeciesId } from '../world/catalog';
 import { startingPlots, type Pet, type Plot } from '../world/world';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export type ThemeChoice = 'system' | 'light' | 'dark';
 
@@ -111,6 +111,10 @@ export interface SaveData {
   plots: Plot[];
   /** Waterings left in the watering can. */
   can: number;
+  /** Added in save version 5. Badges already celebrated, so each is announced once. */
+  seenBadges: string[];
+  /** How many harvests have been gathered, ever. */
+  harvests: number;
 }
 
 export interface Streak {
@@ -149,6 +153,8 @@ export function newSave(now: Date = new Date()): SaveData {
     owned: [],
     plots: startingPlots(now),
     can: 3,
+    seenBadges: [],
+    harvests: 0,
   };
 }
 
@@ -170,6 +176,8 @@ export const MIGRATIONS: Migrations = {
   2: (old) => ({ ...old, fitness: null, progress: {}, planStart: null, sessions: [] }),
   // Version 4 added points and the pet-and-garden world. Sets done before
   // points existed are not back-paid: the ledger starts empty.
+  // Version 5 added badges and a harvest counter.
+  4: (old) => ({ ...old, seenBadges: [], harvests: 0 }),
   3: (old) => ({ ...old, ledger: [], streak: { count: 0, best: 0, lastDay: null, freezes: 0 }, records: {}, pet: null, inventory: {}, owned: [], can: 3 }),
 };
 
@@ -439,6 +447,8 @@ export function sanitise(raw: Loose, now: Date = new Date()): SaveData {
     owned: Array.isArray(raw.owned) ? [...new Set(raw.owned.filter((id): id is string => typeof id === 'string' && id in ITEM))] : [],
     plots: sanitisePlots(raw.plots, now),
     can: typeof raw.can === 'number' && Number.isFinite(raw.can) ? Math.min(60, Math.max(0, Math.floor(raw.can))) : 0,
+    seenBadges: Array.isArray(raw.seenBadges) ? [...new Set(raw.seenBadges.filter((b): b is string => typeof b === 'string' && b.length <= 32))].slice(0, 100) : [],
+    harvests: typeof raw.harvests === 'number' && Number.isFinite(raw.harvests) ? Math.min(100000, Math.max(0, Math.floor(raw.harvests))) : 0,
   };
 }
 

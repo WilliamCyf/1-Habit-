@@ -17,9 +17,10 @@ import type { IconName } from './icons';
 import { installSteps, isStandalone, openInstallSheet } from './install';
 import { mascotSvg } from './mascot';
 import { trainingCards } from './train';
+import { progressTab } from './progress';
 import { pointsChips, refreshWorldNow, worldTab } from './world';
 
-type Tab = 'today' | 'world' | 'me';
+type Tab = 'today' | 'world' | 'progress' | 'me';
 declare const __APP_VERSION__: string;
 
 function greeting(now = new Date()): string {
@@ -94,7 +95,8 @@ function todayTab(p: Profile): HTMLElement {
         h('li', { class: 'done' }, icon('check'), h('span', null, 'Camera rep counting for push-ups, with a voice coach')),
         h('li', { class: 'done' }, icon('check'), h('span', null, 'Twelve exercises and a 4-week plan that adapts to you')),
         h('li', { class: 'done' }, icon('check'), h('span', null, 'Points, a pet and a garden')),
-        h('li', null, h('span', { class: 'dot' }), h('span', null, 'Progress charts, badges and share cards')),
+        h('li', { class: 'done' }, icon('check'), h('span', null, 'Progress charts, badges and share cards')),
+        h('li', null, h('span', { class: 'dot' }), h('span', null, 'Final tuning from real-phone testing')),
       ),
     ),
 
@@ -360,6 +362,7 @@ export function renderHome(root: HTMLElement): () => void {
   const tabs: { id: Tab; label: string; icon: IconName }[] = [
     { id: 'today', label: 'Today', icon: 'today' },
     { id: 'world', label: 'World', icon: 'paw' },
+    { id: 'progress', label: 'Progress', icon: 'chart' },
     { id: 'me', label: 'Me', icon: 'person' },
   ];
   const tabButtons = tabs.map((t) =>
@@ -374,7 +377,7 @@ export function renderHome(root: HTMLElement): () => void {
     const keepScroll = animate ? 0 : content.scrollTop;
     // The world is brought up to date from the clock each time it is shown.
     if (tab === 'world') refreshWorldNow();
-    const view = tab === 'today' ? todayTab(p) : tab === 'world' ? worldTab() : meTab(p);
+    const view = tab === 'today' ? todayTab(p) : tab === 'world' ? worldTab() : tab === 'progress' ? progressTab() : meTab(p);
     clear(content);
     content.appendChild(view);
     content.scrollTop = keepScroll;

@@ -12,6 +12,7 @@ import { button, icon, openSheet, toast } from './components';
 import { formatNumber, h } from './dom';
 import type { IconName } from './icons';
 import { DECOR_ART, petSvg, plotSvg } from './petArt';
+import { celebrateNewBadges } from './progress';
 
 /** Total verified reps so far, which decides how grown-up the pet is. */
 export function totalReps(): number {
@@ -64,6 +65,7 @@ function adoption(): HTMLElement {
       onClick: () => {
         const now = new Date();
         update((s) => act(adoptPet(s, chosen, nameInput.value, now)));
+        celebrateNewBadges();
       },
     }),
   );
@@ -196,7 +198,10 @@ function garden(): HTMLElement {
             onclick: () => {
               if (!plot.plant) return openSeedPicker(i);
               const t = new Date();
-              if (ready) update((s) => act(harvest(s, i, t)));
+              if (ready) {
+                update((s) => act(harvest(s, i, t)));
+                celebrateNewBadges();
+              }
               else update((s) => act(water(s, i, t)));
             },
           },

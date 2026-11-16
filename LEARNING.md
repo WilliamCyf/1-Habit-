@@ -302,7 +302,7 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 - **Dynamic import:** loading a piece of code only at the moment it is needed.
   The tracking library is not downloaded until you start the camera.
 - **Unit test:** a tiny automated check of one piece of logic, such as "does
-  the pacer really pick 15 of 30 frames?". We have 401 so far.
+  the pacer really pick 15 of 30 frames?". We have 416 so far.
 - **End-to-end test:** a robot opens the real page in a real browser and
   clicks through it. I do this with a fake camera feed.
 - **GitHub Actions (CI):** a robot on GitHub that runs the tests and publishes
@@ -474,3 +474,22 @@ same way:
 
 Open the app after 10 hours and food has dropped by 25. Nothing ran in
 between, so nothing used the battery.
+
+### Lesson 5: derive, do not store
+
+Milestone 5 added charts and badges without adding much saved data. Almost
+everything on the Progress tab is *derived*: worked out from the list of
+sets each time the tab opens.
+
+It is the same principle as the points balance. In accounting you would not
+keep a separate note saying "total sales: 5,000" next to the sales ledger,
+because sooner or later the note and the ledger disagree. You add up the
+ledger. So:
+
+- the bar chart is the set history grouped by day
+- "this week" is the same history filtered by date
+- a badge is a rule checked against the history
+
+Stored facts are few and plain (what you did, and when). Everything else is
+a calculation, so it can never be out of date and cannot be edited into
+existence.

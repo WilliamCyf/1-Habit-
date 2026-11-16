@@ -8,6 +8,7 @@ import { CUE_TEXT, LINES, REJECT_TEXT, rejectLine } from '../coach/phrases';
 import { awardSet, claimQuests, type AwardResult, type Bonus } from '../economy/award';
 import { stageFor } from '../world/world';
 import { petSvg } from './petArt';
+import { celebrateNewBadges } from './progress';
 import type { RejectReason } from '../detectors/types';
 import { placement, unit, type ExerciseDef, type Level } from '../exercises/library';
 import { SkeletonRenderer } from '../pose/skeleton';
@@ -326,6 +327,7 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
     );
     stage.replaceChildren(view);
     animateIn(view, 'up');
+    celebrateNewBadges();
   }
 
   function close(summary: SetSummary | null): void {

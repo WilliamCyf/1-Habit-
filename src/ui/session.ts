@@ -16,6 +16,11 @@ import { MAX_HISTORY } from '../state/save';
 import type { CheckIn, SetSummary } from '../workout/setRunner';
 import { button } from './components';
 import { exerciseDemo, type DemoHandle } from './demo';
+import { celebrate } from './confetti';
+import { petSvg } from './petArt';
+import { celebrateNewBadges } from './progress';
+import { shareCard } from './shareCard';
+import { stageFor } from '../world/world';
 import { animateIn, h } from './dom';
 import { mascotSvg } from './mascot';
 import { formatTime, openWorkout } from './workout';
@@ -270,7 +275,13 @@ export function openSession(options: SessionOptions): void {
     const points = results.reduce((n, r) => n + r.points, 0) + questBonuses.reduce((n, b) => n + b.amount, 0);
 
     const complete = setsDone === totalSets;
-    if (complete) coach.fanfare();
+    const badges = celebrateNewBadges();
+    if (complete) {
+      coach.fanfare();
+      if (badges.length === 0) celebrate();
+    }
+    const after = getState();
+    const lifetimeReps = after.history.reduce((n, s) => n + (s.exercise === 'plank' ? 0 : s.reps), 0);
     coach.say(complete ? 'Session complete. Great work today!' : 'Session finished. Well done for showing up.');
     show(
       h('div', { class: 'ss-pip', html: mascotSvg('cheer', 110) }),
@@ -298,8 +309,26 @@ export function openSession(options: SessionOptions): void {
           ),
         ),
       ),
+      badges.length ? h('div', { class: 'card points-card' }, h('strong', null, badges.length === 1 ? 'New badge!' : 'New badges!'), ...badges.map((bd) => h('small', null, `${bd.name}: ${bd.how}`))) : null,
       notes.length ? h('div', { class: 'card ss-notes' }, h('h3', null, 'Next time'), ...notes.map((n) => h('p', null, n))) : null,
       button('Done', { block: true, onClick: close }),
+      button('Share this session', {
+        block: true,
+        variant: 'ghost',
+        icon: 'share',
+        onClick: () =>
+          void shareCard({
+            kicker: plan.title,
+            title: complete ? 'Session complete' : 'Session done',
+            art: after.pet ? petSvg(after.pet.species, stageFor(lifetimeReps), 'cheer', 400) : undefined,
+            stats: [
+              { value: String(reps), label: 'verified reps' },
+              { value: `${minutes}`, label: 'minutes' },
+              { value: `+${points}`, label: 'points' },
+              { value: String(after.streak.count), label: 'day streak' },
+            ],
+          }),
+      }),
     );
   }
 

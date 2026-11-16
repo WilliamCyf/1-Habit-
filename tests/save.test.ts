@@ -67,7 +67,7 @@ describe('damaged or edited saves', () => {
   });
 
   it('repairs missing sections with defaults', () => {
-    const result = loadSave(JSON.stringify({ version: 4 }), NOW);
+    const result = loadSave(JSON.stringify({ version: 5 }), NOW);
     expect(result.ok).toBe(true);
     // A bare save gets every default, except free starting water (that is only for new players).
     if (result.ok) expect(result.data).toEqual({ ...newSave(NOW), can: 0 });
@@ -93,7 +93,7 @@ describe('damaged or edited saves', () => {
 
   it('ignores unknown settings and strips unknown limits', () => {
     const odd = {
-      version: 4,
+      version: 5,
       settings: { units: 'furlongs', theme: 'neon', sound: 'loud' },
       draft: { limits: ['wrists', 'elbows'], age: 'old', weightKg: 70 },
     };
@@ -119,7 +119,7 @@ describe('real upgrade: version 1 to version 2', () => {
     const result = loadSave(JSON.stringify(v1), NOW);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.data.version).toBe(4);
+    expect(result.data.version).toBe(5);
     expect(result.data.progress).toEqual({});
     expect(result.data.fitness).toBeNull();
     expect(result.data.sessions).toEqual([]);
@@ -194,7 +194,8 @@ describe('training plan data (version 3)', () => {
     const result = loadSave(JSON.stringify(v2), NOW);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.version).toBe(4);
+      expect(result.data.version).toBe(5);
+      expect(result.data.seenBadges).toEqual([]);
       expect(result.data.history).toHaveLength(1);
       expect(result.data.ledger).toEqual([]);
       expect(result.data.pet).toBeNull();

@@ -438,6 +438,29 @@ Garden produce goes into your bag as pet food. If harvests paid points, the
 garden would become a way to earn without exercising, which breaks the whole
 idea. Points come from verified reps only.
 
+## D38. Badges are worked out, never stored
+
+A badge is unlocked if your real history says so, checked every time it is
+shown. The save file only remembers which badges have already been
+celebrated, so editing that list cannot hand out a badge. Badges use your
+best streak, so one is not lost when a streak ends.
+
+## D39. Charts without a chart library
+
+The bar chart, the form line and the calendar are a few lines of SVG each.
+A chart library would add more download size than the rest of the app.
+
+## D40. Share cards are made on the phone
+
+The result card is drawn on a canvas and handed to the iPhone share sheet.
+The app uploads nothing: the picture goes only where you choose to send it.
+The link-preview picture (`og.png`) is a fixed image made at build time.
+
+## D41. Celebrations are short and cheap
+
+Confetti is about 70 pieces on one canvas for 1.6 seconds, then it is
+removed. It is skipped if the phone is set to reduce motion.
+
 ---
 
 ## Points economy table

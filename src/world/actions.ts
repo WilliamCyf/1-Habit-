@@ -108,5 +108,6 @@ export function harvest(state: SaveData, plotIndex: number, now: Date): ActionRe
   const p = PLANTS[plot.plant];
   state.inventory[p.gives] = (state.inventory[p.gives] ?? 0) + p.quantity;
   state.plots[plotIndex] = emptyPlot(now);
+  state.harvests += 1;
   return yes(`Harvested ${p.quantity} × ${ITEM[p.gives]!.name.toLowerCase()}!`);
 }

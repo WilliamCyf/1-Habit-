@@ -56,7 +56,7 @@ function fingerprint(files: string[]): string {
 function serviceWorkerPlugin(): Plugin {
   const HEAVY = ['wasm/vision_wasm_internal.js', 'wasm/vision_wasm_internal.wasm', 'models/pose_landmarker_lite.task'];
   // Too big, and not needed offline: only used for Home Screen artwork.
-  const SKIP = new Set(['sw.js', 'icons/icon-1024.png', 'icons/icon-512.png']);
+  const SKIP = new Set(['sw.js', 'icons/icon-1024.png', 'icons/icon-512.png', 'og.png']);
   return {
     name: 'repling-service-worker',
     apply: 'build',

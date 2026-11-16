@@ -6,9 +6,9 @@ to earn points, and points keep a little pet and garden alive.
 
 This file is the map. Read the "Where we are" box first.
 
-> **Where we are:** Milestones 0 to 4 are built and live. You asked me to
+> **Where we are:** Milestones 0 to 5 are built and live. You asked me to
 > keep building without waiting for a test after each milestone, so I am
-> continuing with Milestone 5 (polish, progress, achievements, share cards).
+> finishing with Milestone 6 (speed and heat hardening, final documents).
 >
 > **Only a real iPhone can confirm these, whenever you have a moment:**
 > 1. Do real push-ups count correctly? (Today → Start. Tap the big number
@@ -92,7 +92,7 @@ then I wait for your feedback.
 | M2 | Push-up detector, anti-cheat v1, camera screen, voice coach | **Built.** 34 replayed recordings prove honest reps count and fakes do not. Needs a real-body check. |
 | **M3** | **Plan engine and the other exercises (built)** | A 4-week plan appears, every exercise has a demo and a reliable counter. |
 | M4 | Points, shop, pet and garden | **Built.** Tamper-evident points record, daily cap, streaks, quests, four pets, a garden and a shop. |
-| M5 | Polish: sound, share cards, progress, achievements | It feels like a studio-made app. |
+| M5 | Polish: sound, share cards, progress, achievements | **Built.** Progress charts, 18 badges, confetti, share cards, link-preview picture. |
 | M6 | Speed and heat hardening | 15-minute workout: smooth, cool enough, no bugs. |
 
 ### The exercise library (built in M3)
