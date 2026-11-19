@@ -63,7 +63,7 @@ separate from Safari's.
 Publishing is automatic. Whenever new code is pushed to GitHub, a robot
 (GitHub Actions) does four things in order:
 
-1. runs the 416 automated tests
+1. runs the 446 automated tests
 2. builds the site
 3. checks the app code is still under its 300 KB size budget
 4. publishes it to GitHub Pages
@@ -115,10 +115,12 @@ Then open the address it prints. The camera works on `localhost` without https.
 | `npm run size` | Checks the app code against its size budget |
 | `npm run icons` | Redraws the app icon PNG files from `icon.svg` |
 | `npm run og` | Redraws the link-preview picture |
+| `npm run fixtures` | Re-makes the real-video test recordings (downloads the free clips listed in `scripts/fixtures/sources.json`; needs ffmpeg and Playwright) |
 
 In development only, adding `?sim` to the address feeds the counters a
 pretend athlete, so the screens can be tested without exercising. The
-published app does not contain that code.
+published app does not contain that code. Adding `?cpu` runs the tracker on the main
+processor, for test browsers without a graphics chip.
 
 ---
 
@@ -128,7 +130,8 @@ Repling has no server. Everything, including the points, lives on your phone.
 A no-server app can never be 100% cheat-proof. Here is exactly what it does
 and does not stop.
 
-**What is built, and tested with replayed fake recordings:**
+**What is built, and tested with replayed fake recordings and with videos of
+real people (see DECISIONS.md, D44):**
 
 | Layer | What it stops |
 | --- | --- |
@@ -142,7 +145,7 @@ and does not stop.
 | Tracking loss and jumps | A rep is thrown away if the body vanishes or the tracker jumps to another person. |
 | Confusion check | No counter accepts a different exercise. |
 | Frozen-picture guard | A stalled camera cannot hand out free plank seconds. |
-| Coach check-ins | About one set in three starts with "raise a hand above your head", at an unpredictable moment. A video of someone else exercising cannot answer. |
+| Coach check-ins | About one set in three starts with "raise a hand above your head" (on floor exercises: "lift one hand off the floor and wave"), at an unpredictable moment. A video of someone else exercising cannot answer. |
 | One door for points | Points are created in one function, called only after a verified set. |
 | Tamper-evident record | Every line of the points record carries a fingerprint of the line before. Edits to the saved data are detected and the app falls back to what it can verify. |
 | Daily cap | 400 workout points a day, so grinding or overtraining is not rewarded. |
@@ -155,6 +158,10 @@ and does not stop.
   own hand for every check-in.
 - Hand position in push-ups (wide, diamond) cannot be seen from the side, so
   those styles are taken on trust.
+- Facing the phone, knee push-ups and toe push-ups look the same, so the
+  version is taken on trust. The straight-body check only works side-on.
+- Only one person in the picture. Two people (say, a parent and child side by
+  side) confuse the tracker, and their reps are not counted.
 - Another person doing the exercise for you.
 
 The aim is simple: make cheating harder than doing the push-ups.
@@ -163,12 +170,14 @@ The aim is simple: make cheating harder than doing the push-ups.
 
 ## What only your iPhone can confirm
 
-I cannot run an iPhone, so these were built from geometry and tested on
-simulated bodies and a desktop browser. Each has a way to check it.
+I cannot run an iPhone. The push-up and squat counters are now tested on
+videos of real people (face-on and side-on), and those videos were also fed
+into the real app as a pretend camera. The other exercises are still tested
+on simulated bodies only. Each question below has a way to check it.
 
 | Question | How to check | If it is wrong |
 | --- | --- | --- |
-| Do real reps count correctly? | Exercise library → pick one → Practise one set. | Tap the big number 5 times to show live angles, and tell me the exercise, what you did and what it counted. Thresholds are one number each. |
+| Do real reps count correctly? | Exercise library → pick one → Practise one set. For push-ups, stand the phone on the floor about 1 m in front of your head, facing you. | Tap the big number 5 times to show live numbers, and tell me the exercise, where the phone was, what you did and what it counted. Thresholds are one number each. |
 | Does the voice play nicely with your music? | Camera check → Sound check, with Spotify or Musi playing. | Paste the report. It decides the final sound settings. |
 | Does the phone stay cool in a 15-minute session? | Do a full session and feel the phone. | Tell me, and I lower the tracking rate or picture size. |
 | Does anything sit under the notch or home bar? | Look at each screen, both ways up. | Tell me which screen. |
@@ -194,7 +203,7 @@ professional first. Stop if something hurts.
 
 - [PLAN.md](PLAN.md): architecture, milestones, test results, risks
 - [DECISIONS.md](DECISIONS.md): every big choice and the reason, plus the points economy table
-- [LEARNING.md](LEARNING.md): glossary, "how the app is put together", and six short lessons
+- [LEARNING.md](LEARNING.md): glossary, "how the app is put together", and seven short lessons
 
 ## Credits
 

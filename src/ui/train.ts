@@ -183,7 +183,7 @@ function openFitnessIntro(p: Profile): void {
         h('li', null, 'A 40-second rest.'),
         h('li', null, `As many ${legWord} as you can in 60 seconds.`),
       ),
-      h('p', { class: 'muted small' }, 'Go at a pace you can control. Stop whenever you need to: what you managed still counts. Stand side-on to the phone, about 2 m away.'),
+      h('p', { class: 'muted small' }, 'Go at a pace you can control. Stop whenever you need to: what you managed still counts. Face the phone (side-on works too). For the push-ups, stand it on the floor about 1 m in front of your head; for the leg part, about 2 m away.'),
       button('Start the test', {
         block: true,
         icon: 'camera',

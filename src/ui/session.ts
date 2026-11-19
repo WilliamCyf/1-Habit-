@@ -121,7 +121,7 @@ export function openSession(options: SessionOptions): void {
           }),
           h('li', null, h('span', null, 'Cool-down'), h('small', null, formatTime(plan.cooldown.reduce((s, x) => s + x.seconds, 0) * 1000))),
         ),
-        h('p', { class: 'muted small' }, 'Prop the phone about 2 m away and turn the volume up. I will talk you through everything, and your own music can keep playing.'),
+        h('p', { class: 'muted small' }, 'Stand the phone up facing you and turn the volume up. Before each exercise I will say where to put it, and talk you into place. Your own music can keep playing.'),
         button('Start session', {
           block: true,
           onClick: () => {
@@ -364,7 +364,7 @@ export function openSession(options: SessionOptions): void {
   // ---------------------------------------------------------- the flow
 
   /** Decide, unpredictably, which sets begin with a coach check-in. */
-  function planCheckIns(total: number): (CheckIn | null)[] {
+  function planCheckIns(total: number, floor: boolean[]): (CheckIn | null)[] {
     const list: (CheckIn | null)[] = new Array<CheckIn | null>(total).fill(null);
     const dev = import.meta.env.DEV ? new URLSearchParams(window.location.search) : null;
     if (dev?.has('sim')) {
@@ -372,7 +372,8 @@ export function openSession(options: SessionOptions): void {
       if (dev.has('checkin') && total > 1) list[1] = 'one-hand';
       return list;
     }
-    for (let i = 1; i < total; i++) if (Math.random() < 0.3) list[i] = Math.random() < 0.5 ? 'one-hand' : 'both-hands';
+    // Both hands overhead only makes sense standing up.
+    for (let i = 1; i < total; i++) if (Math.random() < 0.3) list[i] = !floor[i] && Math.random() < 0.5 ? 'both-hands' : 'one-hand';
     // (Written with `some` because `every(c => c === null)` makes TypeScript think the list can only hold nulls.)
     const anyPlanned = list.some((c) => c !== null);
     if (total >= 3 && !anyPlanned) list[1 + Math.floor(Math.random() * (total - 1))] = 'one-hand';
@@ -386,7 +387,10 @@ export function openSession(options: SessionOptions): void {
 
     const order: { block: SetPlan; def: ExerciseDef; setIndex: number }[] = [];
     for (const block of plan.blocks) for (let i = 0; i < block.sets; i++) order.push({ block, def: EXERCISES[block.exercise], setIndex: i });
-    const checkIns = planCheckIns(order.length);
+    const checkIns = planCheckIns(
+      order.length,
+      order.map((o) => o.def.floor === true),
+    );
 
     for (let i = 0; i < order.length && !ended; i++) {
       const { block, def, setIndex } = order[i]!;

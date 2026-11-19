@@ -14,7 +14,7 @@ import { angle, bodyScale, distance, midpoint, seen, sideOfLine, steepness, type
 import { PushupDetector } from '../detectors/pushup';
 import { RepDetector, type RepSpec, type Verdict } from '../detectors/repEngine';
 import { remap } from '../detectors/signal';
-import type { Cue, Detector, DetectorEvent, Frame, LiveView } from '../detectors/types';
+import type { Cue, Detector } from '../detectors/types';
 import type { Limit } from '../profile/profile';
 import * as M from './models';
 
@@ -39,7 +39,8 @@ export interface ExerciseDef {
   id: ExerciseId;
   name: string;
   kind: 'reps' | 'hold';
-  view: 'side' | 'front';
+  /** How to stand towards the phone. 'either' = facing it or side-on, both work. */
+  view: 'side' | 'front' | 'either';
   focus: Focus[];
   /** Effort compared with sitting still, for calorie estimates. */
   met: number;
@@ -52,6 +53,16 @@ export interface ExerciseDef {
   /** Beginner, standard and advanced versions. */
   versions: [VersionDef, VersionDef, VersionDef];
   tips: string[];
+  /**
+   * Spoken help while getting into position, one line for each checklist
+   * item that can fail: [can't see you, wrong position, not still yet].
+   * Missing = a sensible default from `view`.
+   */
+  guide?: [string, string, string];
+  /** Where to put the phone, in one or two plain sentences. */
+  setup?: string;
+  /** Done on the floor (so a coach check asks to lift a hand, not raise it overhead). */
+  floor?: boolean;
   /** Body areas this exercise loads. If the user protects one, it is swapped. */
   avoid: Limit[];
   detector(level: Level): Detector;
@@ -69,9 +80,29 @@ export interface VersionDef {
   how: string;
 }
 
-const PLACE_SIDE = 'Stand side-on to the phone';
-const PLACE_FRONT = 'Face the phone';
-export const placement = (def: ExerciseDef): string => (def.view === 'side' ? PLACE_SIDE : PLACE_FRONT);
+const PLACE: Record<ExerciseDef['view'], string> = {
+  side: 'Turn side-on to the phone',
+  front: 'Face the phone',
+  either: 'Face the phone, or turn side-on',
+};
+export const placement = (def: ExerciseDef): string => PLACE[def.view];
+
+const SETUP: Record<ExerciseDef['view'], string> = {
+  side: 'Lean the phone against a wall about two metres away, then turn side-on to it so your whole body fits.',
+  front: 'Lean the phone about two to three metres away, facing you, so your whole body fits.',
+  either: 'Lean the phone about two metres away, facing you. Side-on works too.',
+};
+
+export const setupHint = (def: ExerciseDef): string => def.setup ?? SETUP[def.view];
+
+const GUIDE: Record<ExerciseDef['view'], [string, string, string]> = {
+  side: ['I can not see all of you yet. Move back so your whole body is in the picture.', 'Turn side-on to the phone, and get into the start position.', 'Hold still in the start position.'],
+  front: ['I can not see all of you yet. Move back so your whole body is in the picture.', 'Face the phone and stand tall.', 'Hold still for a moment.'],
+  either: ['I can not see all of you yet. Move back so your whole body is in the picture.', 'Get into the start position.', 'Hold still for a moment.'],
+};
+
+/** What the coach says when checklist item `index` is the thing stopping the set from starting. */
+export const positionGuide = (def: ExerciseDef, index: number): string => (def.guide ?? GUIDE[def.view])[Math.min(2, Math.max(0, index))]!;
 
 // ------------------------------------------------------------ small helpers
 
@@ -98,84 +129,82 @@ const pick = <T>(level: Level, values: readonly [T, T, T]): T => values[level - 
 const CHECK_SIDE: [string, string] = ['I can see your whole body', 'Side-on to the phone'];
 const CHECK_FRONT: [string, string] = ['I can see your whole body', 'Facing the phone, standing tall'];
 
-// --------------------------------------------------------------- push-up
-// The push-up has its own detector (written first, with extra checks), so
-// here it is wrapped to look like every other detector.
-
-class PushupAdapter implements Detector {
-  private readonly inner: PushupDetector;
-  constructor(level: Level) {
-    this.inner = new PushupDetector(level === 3 ? 900 : 0);
-  }
-  update(frame: Frame): DetectorEvent[] {
-    return this.inner.update(frame);
-  }
-  startCounting(): void {
-    this.inner.startCounting();
-  }
-  stopCounting(): void {
-    this.inner.stopCounting();
-  }
-  get view(): LiveView {
-    const v = this.inner.view;
-    return {
-      tracking: v.tracking,
-      ready: v.ready,
-      readyProgress: v.readyProgress,
-      count: v.reps,
-      checks: [
-        { label: 'I can see your whole body', ok: v.tracking },
-        { label: 'Side-on, body flat like a plank', ok: v.tracking && v.horizontal },
-        { label: 'Arms straight, hands on the floor', ok: v.tracking && v.armsStraight && v.handsDown },
-      ],
-      debug: `elbow ${v.elbowDeg === null ? '-' : v.elbowDeg.toFixed(0)}° line ${v.lineDeg === null ? '-' : v.lineDeg.toFixed(0)}° · ${v.phase} · ${
-        v.variant
-      } · last reject: ${v.lastReject ?? '-'}`,
-    };
-  }
-}
-
 // ----------------------------------------------------------------- squat
 
+/**
+ * The squat, from any angle. The measure is the hips' height above the knees
+ * compared with the knees' height above the ankles:
+ *
+ *               knee height − hip height
+ *   ratio  =  ────────────────────────────
+ *              ankle height − knee height
+ *
+ * About 1 standing tall, near 0 with the thighs level with the floor. It is
+ * compared with YOUR standing value, so it works facing the phone or
+ * side-on, near or far. Tested on real videos (tests/real.test.ts).
+ */
 function squatSpec(level: Level): RepSpec {
-  const peak = pick(level, [125, 102, 102]);
+  // Fractions of your own standing ratio.
+  // Half squat: down to about 60% of your standing ratio.
+  // Full squat: below 0.45, roughly thighs a little above level. Real squats
+  // on video went to 0.1 or lower; half squats stay around 0.6–0.8.
+  const peak = pick(level, [0.62, 0.45, 0.45]);
   const pause = level === 3 ? 1200 : 0;
   return {
     variant: pick(level, ['half', 'standard', 'pause']),
-    view: 'side',
-    rest: 158,
-    start: 150,
+    view: 'either',
+    relative: { gateMin: 0.65 },
+    // Real people do not always stand fully tall between squats (one video
+    // came back to 84%), so "back up" is 82% of your start.
+    rest: 0.82,
+    start: 0.75,
     peak,
-    minRepMs: 600,
-    minTravel: 0.07,
-    maxShift: 0.12,
+    // Time spent below the "going down" line. A real quick squat measured
+    // 0.53 s; under 0.4 s is not humanly possible.
+    minRepMs: 400,
+    minTravel: 0.1,
+    maxShift: 0.3,
+    smoothMs: 70,
     shallowCue: 'go-lower',
-    checkLabels: [...CHECK_SIDE, 'Standing tall, legs straight'],
-    measure(_sk, n, f) {
-      if (!seen(0.5, n.shoulder, n.hip, n.knee, n.ankle)) return null;
-      const scale = bodyScale(n);
-      const torso = steepness(n.hip, n.shoulder);
+    checkLabels: ['I can see your hips, knees and feet', 'Standing tall, facing the phone or side-on', 'Standing still, ready'],
+    measure(sk) {
+      const legs = (['left', 'right'] as const).map((side) => sk[side]).filter((l) => seen(0.5, l.hip, l.knee, l.ankle));
+      if (legs.length === 0) return null;
+      const ratio = (l: SideJoints) => Math.max(-1, Math.min(3, (l.knee.y - l.hip.y) / Math.max(0.01, l.ankle.y - l.knee.y)));
+      const ratios = legs.map(ratio);
+      const leg = legs[0]!;
+      const scale = distance(leg.hip, leg.knee) + distance(leg.knee, leg.ankle);
+      const hip = legs.length === 2 ? midpoint(legs[0]!.hip, legs[1]!.hip) : leg.hip;
+      const ankle = legs.length === 2 ? midpoint(legs[0]!.ankle, legs[1]!.ankle) : leg.ankle;
+      // Upright: if the shoulders are in view, they must be well above the
+      // hips (the phone may be too low to see them, which is fine).
+      const shoulders = [sk.left.shoulder, sk.right.shoulder].filter((j) => j.v >= 0.5);
+      const torso = shoulders.length ? steepness(hip, { x: shoulders.reduce((a, j) => a + j.x, 0) / shoulders.length, y: shoulders.reduce((a, j) => a + j.y, 0) / shoulders.length }) : 90;
+      const torsoUp = !shoulders.length || shoulders.every((j) => j.y < hip.y);
       return {
-        signal: angle(n.hip, n.knee, n.ankle),
-        // Upright-ish torso, and hips above the feet (not lying down).
-        posture: torso >= 30 && n.hip.y < n.ankle.y - 0.15 * scale,
-        mover: n.hip,
-        planted: [n.ankle],
-        anchor: n.ankle,
+        // Follow the STRAIGHTER leg. In a squat both legs bend together, so
+        // this changes nothing. Running or marching lifts one knee while the
+        // other leg stays straight, so it can never look like a squat.
+        signal: Math.max(...ratios),
+        // Standing on the feet: ankles below the knees, body upright-ish.
+        posture: torsoUp && torso >= 30 && legs.every((l) => l.ankle.y > l.knee.y),
+        mover: hip,
+        planted: [ankle],
+        anchor: ankle,
         scale,
         form: torso,
-        // How far apart the feet are front-to-back: small for a squat, large for a lunge.
-        aux: seen(0.35, f.ankle) ? Math.abs(n.ankle.x - f.ankle.x) / scale : 0,
+        // In a squat both legs do the same thing. In a lunge they do not.
+        aux: ratios.length === 2 ? Math.abs(ratios[0]! - ratios[1]!) : 0,
       };
     },
     judge(e) {
-      if (e.auxMax > 0.25) return { ok: false, reason: 'wrong-shape', cue: 'get-in-position' };
+      if (e.auxPeakMax > 1.2) return { ok: false, reason: 'wrong-shape', cue: 'get-in-position' };
       if (pause && e.pauseMs < pause) return { ok: false, reason: 'no-pause', cue: 'hold-it' };
-      const depth = remap(e.peak, peak, peak - 15, 0.6, 1);
-      const chest = remap(e.formMin, 30, 50, 0.5, 1);
-      const tempo = remap(e.durationMs, 600, 1300, 0.6, 1);
+      const depth = remap(e.peak, peak, peak - 0.3, 0.65, 1);
+      const chest = remap(e.formMin, 30, 55, 0.5, 1);
+      const tempo = remap(e.durationMs, 400, 1100, 0.6, 1);
       const cue: Cue = chest < 0.7 ? 'chest-up' : depth < 0.75 ? 'go-lower' : tempo < 0.75 ? 'slow-down' : 'nice';
-      return good(100 * (0.5 * depth + 0.3 * chest + 0.2 * tempo), cue);
+      return good(100 * (0.55 * depth + 0.25 * chest + 0.2 * tempo), cue);
     },
   };
 }
@@ -596,15 +625,22 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
     id: 'pushup',
     name: 'Push-up',
     kind: 'reps',
-    view: 'side',
+    view: 'either',
+    floor: true,
+    setup: 'Put the phone on the floor about a metre in front of where your head will be, leaning upright so the screen faces you. Side-on, two metres away, works too.',
+    guide: [
+      'I can not see your shoulders and arms yet. Check the phone is facing you, about a metre in front of your head.',
+      'Get into push-up position, facing the phone, or side-on.',
+      'Straighten your arms and hold still for a moment.',
+    ],
     focus: ['push', 'core'],
     met: 8,
     weight: 1,
     secPerRep: 2.2,
     base: [6, 8, 6],
     versions: [
-      { name: 'Knee push-up', how: 'Knees on the mat, body straight from knees to shoulders.' },
-      { name: 'Push-up', how: 'On your toes, body in one straight line.' },
+      { name: 'Knee push-up', how: 'Knees on the mat, body straight from knees to shoulders. Facing the phone is fine.' },
+      { name: 'Push-up', how: 'On your toes, body in one straight line. Facing the phone is fine.' },
       { name: 'Slow push-up', how: 'Take three slow seconds to lower, then push up.' },
     ],
     tips: [
@@ -613,7 +649,8 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
       'Push back up until your arms are straight.',
     ],
     avoid: [],
-    detector: (level) => new PushupAdapter(level),
+    // Lowering must take 0.9 s for the slow version.
+    detector: (level) => new PushupDetector(level === 3 ? 900 : 0),
     body: (phase, level, amount = 1) => M.pushupBody(lerp(165, lerp(165, 80, amount), wave(phase, 0, level === 3 ? 0.7 : 0.5)), level === 1),
     repSec: (level) => (level === 3 ? 4.5 : 2),
   },
@@ -621,7 +658,13 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
     id: 'squat',
     name: 'Squat',
     kind: 'reps',
-    view: 'side',
+    view: 'either',
+    setup: 'Put the phone on the floor or a low shelf, two to three metres away, facing you. Your hips, knees and feet must be in the picture.',
+    guide: [
+      'I can not see your legs yet. Move back until your feet are in the picture.',
+      'Stand up tall, facing the phone, or side-on.',
+      'Stand still for a moment.',
+    ],
     focus: ['legs'],
     met: 5.5,
     weight: 0.7,
@@ -635,7 +678,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
     tips: ['Feet shoulder-width apart, weight in your heels.', 'Push your hips back as if sitting on a chair.', 'Keep your chest up and your knees in line with your toes.'],
     avoid: ['knees'],
     detector: rep(squatSpec),
-    body: (phase, level, amount = 1) => M.squat(lerp(172, lerp(172, pick(level, [112, 88, 88]), amount), wave(phase, level === 3 ? 0.4 : 0))),
+    body: (phase, level, amount = 1) => M.squat(lerp(172, lerp(172, pick(level, [102, 80, 80]), amount), wave(phase, level === 3 ? 0.4 : 0))),
     repSec: (level) => (level === 3 ? 4.2 : 2.2),
   },
   lunge: {
@@ -662,6 +705,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
   bridge: {
     id: 'bridge',
     name: 'Glute bridge',
+    floor: true,
     kind: 'reps',
     view: 'side',
     focus: ['back', 'legs'],
@@ -683,6 +727,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
   situp: {
     id: 'situp',
     name: 'Sit-up',
+    floor: true,
     kind: 'reps',
     view: 'side',
     focus: ['core'],
@@ -704,6 +749,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
   plank: {
     id: 'plank',
     name: 'Plank',
+    floor: true,
     kind: 'hold',
     view: 'side',
     focus: ['core', 'push'],
@@ -725,6 +771,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
   climber: {
     id: 'climber',
     name: 'Mountain climber',
+    floor: true,
     kind: 'reps',
     view: 'side',
     focus: ['cardio', 'core'],
@@ -789,6 +836,7 @@ export const EXERCISES: Record<ExerciseId, ExerciseDef> = {
   birddog: {
     id: 'birddog',
     name: 'Bird-dog',
+    floor: true,
     kind: 'reps',
     view: 'side',
     focus: ['back', 'core'],

@@ -10,7 +10,10 @@ let shared: Promise<PoseTracker> | null = null;
 
 export function getSharedTracker(): Promise<PoseTracker> {
   shared ??= (async () => {
-    const tracker = await createPoseTracker({ model: 'lite', delegate: 'GPU' });
+    // Development only: "?cpu" forces the main-processor engine, so a test
+    // browser without a real graphics chip can keep up with a video feed.
+    const cpu = import.meta.env.DEV && new URLSearchParams(window.location.search).has('cpu');
+    const tracker = await createPoseTracker({ model: 'lite', delegate: cpu ? 'CPU' : 'GPU' });
     // Let the "getting ready" screen paint before the slow warm-up starts.
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     tracker.warmUp();

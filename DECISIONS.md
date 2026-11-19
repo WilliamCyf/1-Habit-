@@ -239,6 +239,9 @@ on silent. The app will remind you to switch silent mode off.
 
 ## D22. How a push-up is judged (the numbers)
 
+> **Replaced by D45 (November 2026).** This first counter passed every
+> simulated test but counted zero reps on real videos. Kept for the record.
+
 The counter measures joint angles from a side view. All thresholds live in
 one place, `PUSHUP` in `src/detectors/pushup.ts`, so they are easy to tune
 once we have data from your real push-ups.
@@ -486,6 +489,150 @@ then a 480-pixel picture. Each is a one-line change.
 Every publish runs `scripts/check-size.mjs`. If the app's own code passes
 300 KB, the publish fails. Budgets that are only written down get ignored;
 budgets that block a release get kept.
+
+## D44. Real videos are the exam
+
+**What went wrong.** Your first real push-ups were not counted at all. The
+first counter was built and tested only on simulated bodies (D24), filmed
+side-on. When I ran it on real videos of real people it counted **zero reps on
+every single one**, face-on and side-on. The simulated bodies were too neat:
+real trackers swap left and right, guess hidden joints, and lose the shoulders
+when the phone is on the floor.
+
+**What I do now.** 21 free stock videos from Mixkit (free licence, no
+attribution needed; listed in `scripts/fixtures/sources.json`) are run
+through the app's own pose model in a test browser. Only the dots are kept,
+never the video, in `tests/fixtures/`. I counted the reps in each by eye. The
+tests in `tests/real.test.ts` replay those dots through the counters on every
+change.
+
+| Clip | Exercise | View | Real reps | Counted |
+| --- | --- | --- | --- | --- |
+| 11544 Woman, three-quarter view | push-up | side | 7 | 6 |
+| 11545 Woman, side view | push-up | side | 5 | 5 |
+| 24273 Woman, close, front view | push-up | front | 3 | 3 |
+| 24277 Man, phone on the floor in front | push-up | front | 10 | 9 |
+| 24311 Woman on a step, front view | push-up | front | 2 | 2 |
+| 24383 Woman, ground view from the front | push-up | front | 3 | 3 |
+| 32308 Man outdoors, side view | push-up | side | 4 | 4 |
+| 32320 Man outdoors, three-quarter view | push-up | side | 6 | 6 |
+| 50761 Man on a balcony, phone in front | push-up | front | 5 | 5 |
+| 50762 Man on a balcony, side, far away | push-up | side | 5 | 5 |
+| 4525 Father and son together | push-up | side | 3 | 0 (two people: not supported) |
+| 5048 Face filling the whole picture | push-up | front | ? | 0 (too close: correct) |
+| 32809 Man running at the camera | none | | 0 | 0 |
+| 23914 Woman with a coach beside her | squat | front | 4 | 4 |
+| 52106 Woman at the gym | squat | front | 3 | 3 |
+| 52116 Same, closer | squat | front | 1 | 1 |
+| 52117 Same, far away | squat | front | 2 | 2 |
+| 752 Woman with a ball, far away | squat | front | 2 | 2 |
+| 36062 Woman in a kitchen, three-quarter | squat | side | 5 | 4 |
+| 49038 Women with a ball, side view | squat | side | 3 | 1 |
+| 21273 Man, legs partly out of the picture | squat | side | 2 | 1 |
+
+Push-ups: 48 of 50 real reps counted. Squats are counted only after the
+start gate (stand still first), and stock videos rarely stand still, so the
+first rep or two is often before the gate; in the app the coach asks you to
+stand still first.
+
+The same videos were also played into the **real app** as a fake camera (a
+test browser can pretend a video file is its camera): face-on push-ups 8 of 8
+twice, side-on push-ups 8 of 8, face-on squats 12 of 12.
+
+## D45. The push-up counter, version 2: facing the phone or side-on
+
+You asked for it to track you facing the camera, so the counter now works
+from the front **and** from the side, and works out which on its own.
+
+**Two signals, not one.** Facing the phone, the elbow angle is unreliable
+(arms point partly towards the camera). So the counter mainly watches the
+**shoulder drop**: the height gap between your hands and shoulders, which
+shrinks as you go down. It also watches the elbow bend, and uses whichever
+says "deeper":
+
+```
+                 shoulder drop
+  depth part = ─────────────────
+                      0.4
+
+                 elbow at the top − elbow now
+  elbow part = ───────────────────────────────
+                 elbow at the top − 95°
+
+  progress   = the larger of the two
+```
+
+Progress 0 = top, 1 = full depth. A rep starts above 0.4, must reach 0.9,
+and ends back below 0.3. The gap is the same hysteresis idea as before.
+
+**It calibrates to you.** When you hold the top position for 0.8 s, it
+measures *your* top height and *your* straight-arm angle, and which way you
+face. Everything after is compared with your own numbers, so a long-armed
+person close to the phone and a short-armed person far away both work.
+
+**Which way you face** is decided from the nose: facing the phone it sits
+between the shoulders (measured 0.01–0.06 arm-lengths off-centre); side-on it
+sits out in front (0.10–0.42). The cut is 0.10.
+
+| Rule | Number | Measured on real videos |
+| --- | --- | --- |
+| Full depth (shoulder drop) | 40% of the top height | most real reps drop 50–90%, half reps 15–20%. With the phone very close on the floor the shoulders can leave the picture (drop reads only 16–22%); then the elbow part carries the rep |
+| Body must really move | 12% drop at least | stops arm-only flapping |
+| Fastest rep | 0.5 s | |
+| Standing guard | hips more than 0.95 arm-lengths below shoulders = upright | push-ups 0.75 at most, standing 1.1–1.4 |
+| Hands may drift | 45% of top height | the steadiest hand counts: side-on the far hand is a guess |
+| Body line (side-on only) | not counted below 142°, mentioned below 156° | |
+
+**Form score:** depth 45%, body line 25%, straight arms at the top 15%,
+tempo 15%. Facing the phone the body line cannot be seen, so it gets a fixed
+fair mark.
+
+**Coach tips tuned to real people.** On the real videos, people who clearly
+locked out (checked by eye) read only 125–140° at the elbow, because the
+tracker puts the elbow dot slightly off the line. So "straighten your arms"
+is said only below about 120°, and "go lower" only when a counted rep only
+just made it (progress under 0.95). People doing good push-ups now hear
+"Nice rep". The two side-on videos where the hips really are raised still
+hear "lower your hips".
+
+**What it cannot judge from the front:** knees or toes look the same, so the
+version is taken on trust facing the phone.
+
+## D46. The squat counter, version 2
+
+The first squat counter used the knee angle, which barely changes in a
+face-on picture. It also scored zero on every face-on video. The new signal
+is the shape of the leg:
+
+```
+                 knee height − hip height
+  leg ratio = ──────────────────────────────
+                 ankle height − knee height
+```
+
+Standing, the thigh is as tall as the shin, so the ratio is about 1. In a
+squat the thigh tips forward and its height shrinks, so the ratio falls
+towards 0.4. This works from the front and from the side.
+
+- It follows the **straighter leg**, so a running stride (one leg bent, one
+  straight) is not a squat. The running video counts 0.
+- It **calibrates to you** while you stand still, like the push-up.
+- Both legs must bend together; a big difference between them is rejected as
+  "wrong shape" (stops lunges counting as squats).
+
+## D47. The coach talks you into place
+
+With the phone on the floor you cannot read the screen. So:
+
+- Before each exercise the coach **says where to put the phone** (push-ups:
+  on the floor about a metre in front of your head; standing moves: about two
+  metres away).
+- A ding and "I can see you" when the tracker first finds you.
+- If you are not ready after 5 s, it says the first thing that is wrong
+  ("I can not see your shoulders and arms yet…", "Straighten your arms and
+  hold still…"), again every 8 s.
+- On floor exercises the coach check-in is "lift one hand off the floor and
+  wave", because nobody in push-up position can raise a hand above their head.
 
 ---
 

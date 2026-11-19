@@ -34,3 +34,26 @@ export function remap(v: number, inLow: number, inHigh: number, outLow: number, 
   const k = Math.min(1, Math.max(0, (v - inLow) / (inHigh - inLow)));
   return outLow + k * (outHigh - outLow);
 }
+
+/**
+ * Removes one-frame spikes. Keeps the last few readings and returns the
+ * middle one when they are sorted, so a single wild value (the tracker
+ * briefly mistaking an arm) is simply ignored, like throwing out the
+ * highest and lowest score in a judging panel.
+ */
+export class MedianFilter {
+  private readonly values: number[] = [];
+
+  constructor(private readonly size = 5) {}
+
+  update(value: number): number {
+    this.values.push(value);
+    if (this.values.length > this.size) this.values.shift();
+    const sorted = [...this.values].sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)]!;
+  }
+
+  reset(): void {
+    this.values.length = 0;
+  }
+}

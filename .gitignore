@@ -5,3 +5,6 @@ dist
 public/wasm
 .DS_Store
 *.local
+
+# Downloaded test videos and their frames (see scripts/extract-fixtures.mjs)
+.cache

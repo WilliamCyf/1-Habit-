@@ -51,8 +51,11 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 │    coach/ the voice · workout/ runs one set · plan/ the coach's brain ·
 │    economy/ points and the ledger · world/ pet, garden, shop ·
 │    progress/ statistics and badges)
-├── tests/                Automated checks (416 of them)
-├── scripts/              Helper scripts (copy the engine, make the icons)
+├── tests/                Automated checks (446 of them)
+│   └── fixtures/         Real people's push-ups and squats, as dots only
+├── scripts/              Helper scripts (copy the engine, make the icons,
+│                         turn real videos into fixtures)
+├── dev/                  The "pose lab" page those videos are run through
 └── .github/workflows/    The robot that tests and publishes the site
 ```
 
@@ -252,6 +255,26 @@ milestone adds to it. Words are grouped by topic, in the order you met them.
 - **Callback:** a function you hand to other code, saying "call this when
   something happens". The set controller tells the screen about reps this way.
 
+### Testing with real data (after your first push-ups)
+
+- **Fixture:** a saved, fixed piece of test input that the tests replay every
+  time. Ours are real videos turned into dots.
+- **Ground truth:** the known right answer you grade against. Here, the reps
+  I counted by eye in each video.
+- **Overfitting:** tuning something so closely to your test data that it
+  fails on new data. Like a strategy that only works on last year's prices.
+- **Calibration:** measuring a starting point first and comparing everything
+  after with it. Like zeroing kitchen scales before weighing.
+- **Median filter:** keep the middle value of the last few readings. One wild
+  reading can never be the middle, so it is thrown away. Like dropping the
+  highest and lowest score from a panel of judges.
+- **View detection:** working out whether you face the phone or stand
+  side-on, from where your nose sits between your shoulders.
+- **Headless browser:** a real web browser with no window, driven by a
+  script. I use one to run the pose model on videos and to test the app.
+- **Fake camera:** a browser setting that plays a video file as if it were
+  the camera. It lets a test watch the real app count reps.
+
 ### Planning and sessions (Milestone 3)
 
 - **Spec (specification):** a short description that tells shared code how
@@ -384,22 +407,27 @@ Three ideas worth remembering:
 
 ### Lesson 2: how the push-up counter thinks
 
-Open `src/detectors/pushup.ts`. Three ideas carry the whole thing.
+Open `src/detectors/pushup.ts`. Three ideas carry the whole thing. (This is
+version 2. Version 1 is the story in Lesson 7.)
 
 **1. Turn pictures into a few numbers.** Each look gives 33 dots. The counter
-only needs a handful of numbers from them, mainly the elbow angle (how bent
-the arm is) and the body-line angle (how straight shoulder–hip–ankle is).
+only needs two numbers from them: the **shoulder drop** (how much the gap
+between your hands and your shoulders has shrunk) and the **elbow bend**. It
+blends them into one "progress" number: 0 at the top, 1 at full depth. Using
+two signals means that when one is hard to see (elbows facing the phone,
+shoulders out of the picture), the other carries the rep.
 
-**2. A turnstile with a gap.** The counter clicks once per journey: arms
-straight, down to a deep bend, back to straight. "Deep" means 100° or less
-and "straight" means 150° or more. The 50° gap between them is the trick. A
-shaky reading wobbling around one number cannot click twice, because it would
-have to travel the whole gap.
+**2. A turnstile with a gap.** The counter clicks once per journey: a rep
+starts when progress passes 0.4, must reach 0.9 ("deep enough"), and ends
+when it comes back below 0.3. The gap between "deep" and "finished" is the
+trick. A shaky reading wobbling around one number cannot click twice,
+because it would have to travel the whole gap.
 
 **3. Evidence before a verdict.** While a rep is in progress, the counter
-collects evidence: how deep, how long, how straight, did the shoulder really
-drop, did the hands stay put. Only when the arms are straight again does it
-judge, and it either counts the rep with a score or rejects it with a reason.
+collects evidence: how deep, how long, did the body really travel, did the
+hands stay put, were you lying down (not standing). Only when you are back at
+the top does it judge, and it either counts the rep with a score or rejects
+it with a reason.
 
 Speed of one rep is checked the simple way:
 
@@ -412,11 +440,10 @@ Speed of one rep is checked the simple way:
 You cannot change the distance, so a rep that finishes in under half a second
 means it was not a full rep (or it was a bounce).
 
-**Why I trust it without filming anyone:** `tests/pushup.test.ts` plays 34
-recordings into the counter. Honest ones must count exactly, at 10, 15 and 30
-looks per second, with jitter, facing either way. Every kind of fake must
-score zero. If a future change breaks any of that, the tests fail and the
-app is not published.
+**Why I trust it now:** `tests/real.test.ts` replays recordings of real
+people doing push-ups and squats, face-on and side-on. `tests/pushup.test.ts`
+still replays the fake cheats, which must all score zero. If a change breaks
+either, the tests fail and the app is not published.
 
 ### Lesson 3: write it once
 
@@ -540,6 +567,43 @@ The time budget for one look, using your phone's own measurement:
 
 So the phone rests for about 72% of the time even while tracking. That
 resting share is what keeps it cool.
+
+### Lesson 7: test against the real world
+
+**What happened.** The first push-up counter passed 34 simulated tests, and
+then counted none of your real push-ups. When I ran it on 13 videos of real
+people, it counted zero on every one.
+
+**Why.** A simulation only tests what you already imagined. My simulated
+bodies were perfect stick figures filmed from the side. Real trackers swap
+your left and right arm, guess joints they cannot see, and lose your
+shoulders when the phone is on the floor. None of that was in my imagination,
+so none of it was in my tests.
+
+**The analogy you know:** back-testing. You would never trust an investment
+strategy tested only on a made-up, smooth price path. You test it on real
+historical prices, with their crashes and gaps. A **fixture** is my
+"historical price data": a real video turned into dots, with the true number
+of reps written next to it (the **ground truth**, counted by me by eye).
+
+**The trap on the other side: overfitting.** If you tweak a strategy until it
+fits past prices perfectly, it often fails on future prices. Same here: if I
+nudge thresholds until every video is exactly right, the counter may fail on
+*you*. To guard against it:
+
+- Rules are simple and few, with wide safety margins.
+- Every number in `PUSHUP` has a comment saying what real videos measured.
+- The tests also include things that must **not** count: a man running at
+  the camera, push-up videos fed to the squat counter and the other way round.
+
+**Calibration** did more than any threshold. Instead of "shoulders must drop
+5 cm", the counter measures *your* top position first and then works in
+percentages of it. It is like judging a fund by its percentage return rather
+than its dollar gain: a big and a small account become comparable.
+
+**The last check** was the real app with a pretend camera: the test browser
+played a real push-up video as if it were the iPhone camera, and the app
+counted 8 of 8.
 
 ---
 

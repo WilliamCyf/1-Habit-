@@ -12,7 +12,7 @@
 //     ▲                                                             │
 //     └──────────────── signal returns to "rest" ───────────────────┘
 //                         (then the rep is judged)
-import { remap, Smoother } from './signal';
+import { MedianFilter, remap, Smoother } from './signal';
 import { bodyScale, readSkeleton, sideClarity, type SideJoints, type Skeleton } from './joints';
 import type { Cue, Detector, DetectorEvent, Frame, LiveView, RejectReason } from './types';
 
@@ -62,7 +62,8 @@ export type Verdict = { ok: true; score: number; cue: Cue } | { ok: false; reaso
 export interface RepSpec {
   /** Recorded on each rep, e.g. "half", "standard", "pause". */
   variant: string;
-  view: 'side' | 'front';
+  /** 'either' = works facing the phone or side-on. */
+  view: 'side' | 'front' | 'either';
   /** Signal values. If peak is smaller than rest, the signal goes DOWN into the rep. */
   rest: number;
   start: number;
@@ -74,6 +75,16 @@ export interface RepSpec {
   /** Planted points may drift at most this share of body size. */
   maxShift: number;
   smoothMs?: number;
+  /**
+   * Compare with YOUR starting position instead of fixed numbers. The signal
+   * is measured while you hold the start position, and from then on it is
+   * divided by that value, so `rest`, `start` and `peak` become fractions of
+   * your own start (1 = where you started). This makes a measure work for
+   * every body and every camera angle. `gateMin` is the raw value the signal
+   * must be above (or below, if the signal goes up into a rep) to count as
+   * "in the start position" before anything has been measured.
+   */
+  relative?: { gateMin: number };
   /** What to say when the movement stops short of the peak. */
   shallowCue: Cue;
   /** Checklist wording: [body seen, right shape, start position]. */
@@ -114,6 +125,11 @@ interface Track {
 export class RepDetector implements Detector {
   private readonly dir: 1 | -1;
   private readonly smooth: Smoother;
+  private readonly spike = new MedianFilter(3);
+  /** Relative mode: your own start value, and samples collected while you hold still. */
+  private restRef = 0;
+  private holdSamples: number[] = [];
+  private peakSinceRep = 0;
   private side: 'left' | 'right' | null = null;
   private track: Track | null = null;
   private reps = 0;
@@ -196,19 +212,43 @@ export class RepDetector implements Detector {
     this.lastAnchor = m.anchor;
     this.lastAnchorT = t;
 
-    const signal = this.smooth.update(m.signal, t);
-    this.signalNow = signal;
+    const raw = this.smooth.update(this.spike.update(m.signal), t);
     this.posture = m.posture;
+    const rel = this.spec.relative;
+
+    if (rel && this.counting && this.restRef === 0) {
+      // Counting began without the gate (tests can do this): learn the start
+      // from the first moments, assuming they are the start position.
+      this.holdSamples.push(raw);
+      if (this.holdSamples.length < 5) return events;
+      this.restRef = median(this.holdSamples);
+      this.holdSamples = [];
+    }
+    const signal = rel && this.restRef ? raw / this.restRef : raw;
+    this.signalNow = signal;
     const toward = this.toward(signal);
-    this.atRest = toward <= 0;
+    this.atRest = rel && !this.restRef ? (raw - rel.gateMin) * this.dir <= 0 : toward <= 0;
 
     // ---- start-position gate
-    if (m.posture && this.atRest) {
+    if (m.posture && this.atRest && !this.counting) {
+      if (this.readySince === null) this.holdSamples = [];
       this.readySince ??= t;
+      if (rel) {
+        this.holdSamples.push(raw);
+        const hi = Math.max(...this.holdSamples);
+        const lo = Math.min(...this.holdSamples);
+        // Moving a lot while "holding still" restarts the hold.
+        if (hi - lo > 0.2 * Math.max(Math.abs(hi), Math.abs(lo), 1e-6)) {
+          this.readySince = t;
+          this.holdSamples = [raw];
+        }
+      }
       this.readyProgress = Math.min(1, (t - this.readySince) / READY_HOLD_MS);
-    } else {
+      if (rel && this.readyProgress >= 1) this.restRef = median(this.holdSamples);
+    } else if (!this.counting) {
       this.readySince = null;
       this.readyProgress = 0;
+      if (rel) this.restRef = 0;
     }
     if (!this.counting) return events;
 
@@ -223,7 +263,19 @@ export class RepDetector implements Detector {
     const peakAt = this.toward(this.spec.peak);
 
     if (!this.track) {
+      // Relative mode: remember the best start position since the last rep
+      // (highest, for a signal that drops into the rep), in "fraction of
+      // your start" units.
+      if (rel) this.peakSinceRep = this.peakSinceRep === 0 ? signal : this.dir < 0 ? Math.max(this.peakSinceRep, signal) : Math.min(this.peakSinceRep, signal);
       if (toward > startAt && m.posture) {
+        const best = this.peakSinceRep;
+        if (rel && best > 0.5 && best < 2) {
+          // Keep "your start" up to date, in case you shifted or are tiring:
+          // move towards a better start at once, towards a worse one gently.
+          const better = this.dir < 0 ? best > 1 : best < 1;
+          this.restRef *= better ? best : 0.7 + 0.3 * best;
+        }
+        this.peakSinceRep = 0;
         this.track = {
           startT: t,
           peaked: false,
@@ -375,3 +427,8 @@ export class RepDetector implements Detector {
 
 /** Helpers for writing `judge` functions. */
 export const scoreParts = { remap, bodyScale };
+
+function median(xs: number[]): number {
+  const sorted = [...xs].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] ?? 0;
+}

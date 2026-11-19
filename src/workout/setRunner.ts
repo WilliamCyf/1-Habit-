@@ -11,7 +11,6 @@
 //                              ▲           │         │
 //                              └── moved ──┘         └── app hidden → paused → position
 //
-import { readSkeleton } from '../detectors/joints';
 import type { Cue, Detector, HoldEvent, LiveView, RejectEvent, RejectReason, RepEvent } from '../detectors/types';
 import { FramePacer } from '../perf/pacer';
 import { Governor } from '../perf/governor';
@@ -29,8 +28,8 @@ export type EndReason = 'target' | 'time' | 'stopped' | 'left' | 'idle' | 'check
 /** Either "do this many" or "do as many as you can in this many seconds". */
 export type SetGoal = { kind: 'count'; target: number } | { kind: 'time'; seconds: number };
 
-/** A coach check-in: a gesture only a live person can answer. */
-export type CheckIn = 'one-hand' | 'both-hands';
+import { checkInSeen, type CheckIn } from './checkIn';
+export type { CheckIn };
 
 export interface SetSummary {
   /** Verified reps, or valid seconds for a hold. */
@@ -433,16 +432,7 @@ export class SetRunner {
    */
   private runCheckIn(pose: readonly Landmark[] | null, aspect: number, t: number): void {
     if (!this.checkInStart) this.checkInStart = t;
-    let ok = false;
-    if (pose) {
-      const sk = readSkeleton(pose, aspect);
-      // "Above the head" = above the nose if we can see it, otherwise well above the shoulder.
-      const up = (wrist: typeof sk.left.wrist, shoulder: typeof sk.left.shoulder) =>
-        wrist.v >= 0.5 && (sk.nose.v >= 0.5 ? wrist.y < sk.nose.y - 0.02 : shoulder.v >= 0.5 && wrist.y < shoulder.y - 0.12);
-      const left = up(sk.left.wrist, sk.left.shoulder);
-      const right = up(sk.right.wrist, sk.right.shoulder);
-      ok = this.options.checkIn === 'both-hands' ? left && right : left || right;
-    }
+    const ok = checkInSeen(pose, aspect, this.options.checkIn!);
     if (ok) {
       this.checkInSince ??= t;
       if (t - this.checkInSince >= CHECKIN_HOLD_MS) {

@@ -87,7 +87,7 @@ then I wait for your feedback.
 | --- | --- | --- |
 | M0 | Camera check | **Passed.** 15 looks per second, 19 ms think time, no heat slowdown in 5 minutes. |
 | M1 | App shell, onboarding, profile, install | **Built.** Setup, health check, calorie estimates, offline, backups. |
-| M2 | Push-up detector, anti-cheat v1, camera screen, voice coach | **Built.** 34 replayed recordings prove honest reps count and fakes do not. Needs a real-body check. |
+| M2 | Push-up detector, anti-cheat v1, camera screen, voice coach | **Rebuilt after your first real test.** Version 1 counted zero real reps. Version 2 works facing the phone or side-on and counts 48 of 50 reps on real videos (D44, D45). |
 | M3 | Plan engine and the other exercises | **Built.** | A 4-week plan appears, every exercise has a demo and a reliable counter. |
 | M4 | Points, shop, pet and garden | **Built.** Tamper-evident points record, daily cap, streaks, quests, four pets, a garden and a shop. |
 | M5 | Polish: sound, share cards, progress, achievements | **Built.** Progress charts, 18 badges, confetti, share cards, link-preview picture. |
@@ -95,9 +95,10 @@ then I wait for your feedback.
 
 ### The exercise library (built in M3)
 
-Side-on to the phone: push-up, squat, reverse lunge, glute bridge, sit-up,
-plank, mountain climber, bird-dog, good morning, burpee. Facing the phone:
-jumping jack, high knees. Each has a beginner, standard and advanced version.
+Facing the phone or side-on (worked out automatically, tested on real
+videos): push-up, squat. Side-on to the phone: reverse lunge, glute bridge,
+sit-up, plank, mountain climber, bird-dog, good morning, burpee. Facing the
+phone: jumping jack, high knees. Each has a beginner, standard and advanced version.
 
 Left out because the camera cannot judge them reliably: superman and reverse
 snow angels (the lift is too small to measure) and side plank (the body hides
@@ -111,10 +112,11 @@ instead. Reasons are in DECISIONS.md, D28.
 3. Full range of motion, straight body line, minimum tempo, realistic rep speed.
 4. Scene-motion check: if every body dot moves together, the phone is moving, not you.
 5. Stillness check: jitter while standing still never crosses both thresholds.
-6. Random friendly coach check-ins between sets ("wave your left hand").
+6. Random friendly coach check-ins between sets ("raise a hand", or "lift one hand off the floor" on floor exercises).
 7. Points ledger stored as a hash chain, so edited save data is detected.
 8. Daily points cap, so grinding and overtraining are not rewarded.
 9. A test harness that replays fake cheating recordings and proves they fail.
+10. Real-video exams: 21 recordings of real people that the counters must get right (D44).
 
 Honest limit, stated now: with no server, a determined programmer can always
 cheat their own phone. The goal is to make cheating harder than doing the push-ups.

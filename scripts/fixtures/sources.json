@@ -1,0 +1,271 @@
+{
+  "about": "Real exercise videos used to test the rep counters. The videos are not stored here: scripts/extract-fixtures.mjs downloads them, runs the app's pose model on them, and saves only the body-dot numbers to tests/fixtures/. Rep counts were labelled by hand.",
+  "license": "Mixkit Stock Video Free License (https://mixkit.co/license/#videoFree)",
+  "clips": [
+    {
+      "id": "24277",
+      "title": "Man doing push-ups in the gym, camera on the floor in front",
+      "url": "https://assets.mixkit.co/videos/24277/24277-360.mp4",
+      "view": "front",
+      "exercise": "pushup",
+      "reps": 10,
+      "accept": [
+        9,
+        10
+      ],
+      "note": "Phone very close and low: the shoulder drop looks small, the elbows carry it. About 10 reps; the last may not finish inside the clip."
+    },
+    {
+      "id": "50761",
+      "title": "Young man doing push-ups on a balcony, camera in front",
+      "url": "https://assets.mixkit.co/videos/50761/50761-360.mp4",
+      "view": "front",
+      "exercise": "pushup",
+      "reps": 5,
+      "accept": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "24383",
+      "title": "Woman doing push-ups, ground view from the front",
+      "url": "https://assets.mixkit.co/videos/24383/24383-360.mp4",
+      "view": "front",
+      "exercise": "pushup",
+      "reps": 3,
+      "accept": [
+        2,
+        3
+      ],
+      "note": "The clip opens mid-movement with a few bad frames, so the first rep may be missed."
+    },
+    {
+      "id": "24273",
+      "title": "Strong woman doing push-ups in the gym, close front view",
+      "url": "https://assets.mixkit.co/videos/24273/24273-360.mp4",
+      "view": "front",
+      "exercise": "pushup",
+      "reps": 3,
+      "accept": [
+        3,
+        3
+      ],
+      "note": "A fourth rep starts but the clip ends at the bottom."
+    },
+    {
+      "id": "5048",
+      "title": "Young man doing push-ups, very close front view",
+      "url": "https://assets.mixkit.co/videos/5048/5048-360.mp4",
+      "view": "front",
+      "exercise": "pushup",
+      "reps": null,
+      "note": "Too close: only the head and part of the arms are in view. Not labelled; used to check nothing silly happens."
+    },
+    {
+      "id": "24311",
+      "title": "Woman doing push-ups on a step, front view",
+      "url": "https://assets.mixkit.co/videos/24311/24311-360.mp4",
+      "view": "front",
+      "exercise": "pushup",
+      "reps": 2,
+      "accept": [
+        1,
+        2
+      ],
+      "note": "Hands on a step (incline push-up)."
+    },
+    {
+      "id": "11545",
+      "title": "Woman doing push-ups, side view",
+      "url": "https://assets.mixkit.co/videos/11545/11545-360.mp4",
+      "view": "side",
+      "exercise": "pushup",
+      "reps": 5,
+      "accept": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "32308",
+      "title": "Man doing push-ups outdoors, side view",
+      "url": "https://assets.mixkit.co/videos/32308/32308-360.mp4",
+      "view": "side",
+      "exercise": "pushup",
+      "reps": 4,
+      "accept": [
+        4,
+        5
+      ],
+      "note": "A fifth rep starts but the clip ends before the top."
+    },
+    {
+      "id": "32320",
+      "title": "Man doing push-ups outdoors, three-quarter view",
+      "url": "https://assets.mixkit.co/videos/32320/32320-360.mp4",
+      "view": "side",
+      "exercise": "pushup",
+      "reps": 6,
+      "accept": [
+        6,
+        6
+      ]
+    },
+    {
+      "id": "11544",
+      "title": "Woman doing push-ups, three-quarter view",
+      "url": "https://assets.mixkit.co/videos/11544/11544-360.mp4",
+      "view": "side",
+      "exercise": "pushup",
+      "reps": 7,
+      "accept": [
+        6,
+        7
+      ],
+      "note": "Goes straight into the first rep with no pause at the top, so a counter started on the very first frame may miss it."
+    },
+    {
+      "id": "50762",
+      "title": "Man doing push-ups on a balcony, side view at a distance",
+      "url": "https://assets.mixkit.co/videos/50762/50762-360.mp4",
+      "view": "side",
+      "exercise": "pushup",
+      "reps": 5,
+      "accept": [
+        5,
+        6
+      ],
+      "note": "The sixth rep is still rising when the clip ends."
+    },
+    {
+      "id": "4525",
+      "title": "Father and son doing push-ups, side view",
+      "url": "https://assets.mixkit.co/videos/4525/4525-360.mp4",
+      "view": "side",
+      "exercise": "pushup",
+      "reps": 3,
+      "accept": [
+        0,
+        4
+      ],
+      "note": "Two people side by side. The tracker cannot keep them apart, so this only checks that it never over-counts. The app asks for one person in view."
+    },
+    {
+      "id": "32809",
+      "title": "Man running towards the camera (not a push-up)",
+      "url": "https://assets.mixkit.co/videos/32809/32809-360.mp4",
+      "view": "other",
+      "exercise": "none",
+      "reps": 0,
+      "accept": [
+        0,
+        0
+      ],
+      "note": "Running, not push-ups: must count zero."
+    },
+    {
+      "id": "52106",
+      "title": "Woman doing squats at the gym, facing the camera",
+      "url": "https://assets.mixkit.co/videos/52106/52106-360.mp4",
+      "view": "front",
+      "exercise": "squat",
+      "reps": 3,
+      "accept": [
+        3,
+        3
+      ]
+    },
+    {
+      "id": "52116",
+      "title": "Woman doing squats at the gym, facing the camera, closer",
+      "url": "https://assets.mixkit.co/videos/52116/52116-360.mp4",
+      "view": "front",
+      "exercise": "squat",
+      "reps": 1,
+      "accept": [
+        1,
+        1
+      ],
+      "note": "A second squat starts as the clip ends."
+    },
+    {
+      "id": "52117",
+      "title": "Woman doing squats at the gym, facing the camera, far away",
+      "url": "https://assets.mixkit.co/videos/52117/52117-360.mp4",
+      "view": "front",
+      "exercise": "squat",
+      "reps": 2,
+      "accept": [
+        2,
+        2
+      ],
+      "note": "Starts at the bottom of a squat; far from the camera."
+    },
+    {
+      "id": "49038",
+      "title": "Women doing squats with a ball, side view",
+      "url": "https://assets.mixkit.co/videos/49038/49038-360.mp4",
+      "view": "side",
+      "exercise": "squat",
+      "reps": 3,
+      "accept": [
+        1,
+        1
+      ],
+      "note": "Counted after the start gate: she only stands still after two squats."
+    },
+    {
+      "id": "36062",
+      "title": "Woman doing squats in a kitchen, three-quarter view",
+      "url": "https://assets.mixkit.co/videos/36062/36062-360.mp4",
+      "view": "side",
+      "exercise": "squat",
+      "reps": 5,
+      "accept": [
+        3,
+        4
+      ],
+      "note": "Counted after the start gate: the first squat comes before she stands still."
+    },
+    {
+      "id": "21273",
+      "title": "Man doing squats at home, side view, legs partly out of frame",
+      "url": "https://assets.mixkit.co/videos/21273/21273-360.mp4",
+      "view": "side",
+      "exercise": "squat",
+      "reps": 2,
+      "accept": [
+        1,
+        1
+      ],
+      "note": "Starts mid-squat with the feet partly out of frame; counted after the start gate."
+    },
+    {
+      "id": "23914",
+      "title": "Woman doing squats with a coach beside her",
+      "url": "https://assets.mixkit.co/videos/23914/23914-360.mp4",
+      "view": "front",
+      "exercise": "squat",
+      "reps": 4,
+      "accept": [
+        3,
+        4
+      ],
+      "note": "A coach kneels right beside her."
+    },
+    {
+      "id": "752",
+      "title": "Woman doing squats with a ball, facing the camera, far away",
+      "url": "https://assets.mixkit.co/videos/752/752-360.mp4",
+      "view": "front",
+      "exercise": "squat",
+      "reps": 2,
+      "accept": [
+        2,
+        2
+      ],
+      "note": "Starts at the bottom of a squat; far from the camera; holding a ball."
+    }
+  ]
+}

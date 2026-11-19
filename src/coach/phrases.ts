@@ -54,6 +54,8 @@ export const LINES = {
   lastOne: 'Last one.',
   left: 'Set finished.',
   checkIn: 'Coach check! Raise one hand above your head.',
+  checkInFloor: 'Coach check! Lift one hand off the floor and wave.',
+  seeYou: 'I can see you.',
   checkInBoth: 'Coach check! Raise both hands above your head.',
   checkInPassed: 'Thanks!',
   checkInFailed: 'I could not see your hand, so this set is skipped.',

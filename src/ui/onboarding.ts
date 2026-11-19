@@ -39,24 +39,26 @@ function statCard(name: IconName, value: string, label: string): HTMLElement {
   return h('div', { class: 'stat' }, icon(name, 'icon stat-icon'), h('strong', null, value), h('small', null, label));
 }
 
-/** A drawing of the phone propped up, side-on to someone doing a push-up. */
-const SETUP_ART = `<svg viewBox="0 0 320 150" class="setup-art" role="img" aria-label="Phone leaning against a wall, about two metres from a person doing a push-up side-on">
-  <path d="M296 44L44 100L296 122Z" fill="currentColor" opacity="0.07"/>
+/** A drawing of the phone standing on the floor, facing someone doing a push-up. */
+const SETUP_ART = `<svg viewBox="0 0 320 150" class="setup-art" role="img" aria-label="Phone standing upright on the floor, about one metre in front of the head of a person doing a push-up who faces it">
+  <path d="M40 88L304 80L304 122L70 122Z" fill="currentColor" opacity="0.07"/>
   <path d="M10 122H310" stroke="currentColor" stroke-width="2" opacity="0.35" stroke-linecap="round"/>
-  <rect x="10" y="18" width="9" height="104" rx="3" fill="currentColor" opacity="0.25"/>
-  <rect x="25" y="84" width="17" height="36" rx="4" transform="rotate(-13 33 120)" fill="none" stroke="#7cf2b0" stroke-width="3"/>
-  <circle cx="36" cy="97" r="2.200" fill="#7cf2b0"/>
-  <rect x="150" y="119" width="140" height="6" rx="3" fill="#ff7a6b"/>
+  <rect x="18" y="94" width="11" height="28" rx="4" fill="currentColor" opacity="0.25"/>
+  <g transform="rotate(-10 44 120)">
+    <rect x="36" y="82" width="17" height="38" rx="4" fill="none" stroke="#7cf2b0" stroke-width="3"/>
+    <circle cx="44.500" cy="88" r="2.200" fill="#7cf2b0"/>
+  </g>
+  <rect x="112" y="119" width="186" height="6" rx="3" fill="#ff7a6b"/>
   <g stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <path d="M258 86L212 97L166 113"/>
-    <path d="M258 86L260 116"/>
+    <path d="M140 97L214 104L288 116"/>
+    <path d="M140 97L142 117"/>
   </g>
-  <circle cx="272" cy="78" r="9" fill="currentColor"/>
+  <circle cx="125" cy="92" r="9" fill="currentColor"/>
   <g stroke="currentColor" stroke-width="1.500" opacity="0.6" stroke-linecap="round">
-    <path d="M48 138H150" stroke-dasharray="4 5"/>
-    <path d="M48 138l6-4M48 138l6 4M150 138l-6-4M150 138l-6 4"/>
+    <path d="M50 138H114" stroke-dasharray="4 5"/>
+    <path d="M50 138l6-4M50 138l6 4M114 138l-6-4M114 138l-6 4"/>
   </g>
-  <text x="99" y="149" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.75" font-family="inherit" font-weight="700">about 2 m</text>
+  <text x="82" y="149" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.75" font-family="inherit" font-weight="700">about 1 m</text>
 </svg>`;
 
 export function renderOnboarding(root: HTMLElement, onDone: () => void): void {
@@ -295,8 +297,8 @@ export function renderOnboarding(root: HTMLElement, onDone: () => void): void {
           h(
             'ul',
             { class: 'features compact' },
-            feature('phone', 'Prop your phone up', 'Lean it against a wall or a water bottle, about 2 m away.'),
-            feature('person', 'Fit your whole body in', 'I will tell you when I can see you from head to toe.'),
+            feature('phone', 'Stand your phone up, facing you', 'For push-ups, on the floor about 1 m in front of your head. For standing moves, about 2 m away. Side-on works too.'),
+            feature('person', 'I will talk you into place', 'I will say when I can see you, and what to fix if I cannot.'),
             feature('shield', 'Nothing leaves your phone', 'No video is recorded, saved or uploaded. Ever.'),
           ),
           h('p', { class: 'muted small' }, 'I will ask for the camera only when your first set starts, and switch it off between sets.'),

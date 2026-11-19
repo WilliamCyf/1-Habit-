@@ -10,7 +10,7 @@ import { stageFor } from '../world/world';
 import { petSvg } from './petArt';
 import { celebrateNewBadges } from './progress';
 import type { RejectReason } from '../detectors/types';
-import { placement, unit, type ExerciseDef, type Level } from '../exercises/library';
+import { placement, positionGuide, setupHint, unit, type ExerciseDef, type Level } from '../exercises/library';
 import { SkeletonRenderer } from '../pose/skeleton';
 import { MAX_HISTORY } from '../state/save';
 import { SetRunner, type CheckIn, type SetGoal, type SetOptions, type SetPhase, type SetSummary } from '../workout/setRunner';
@@ -92,13 +92,17 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
     ring,
     lightNote,
     sleepNote,
-    h('p', { class: 'wk-hint' }, 'Tip: lean the phone against a wall about 2 m away, so your whole body fits.'),
+    h('p', { class: 'wk-hint' }, setupHint(def)),
   );
   const checkInCard = h(
     'div',
     { class: 'wk-card wk-checkin' },
     h('strong', null, 'Coach check!'),
-    h('p', null, options.checkIn === 'both-hands' ? 'Raise both hands above your head.' : 'Raise one hand above your head.'),
+    h(
+      'p',
+      null,
+      options.checkIn === 'both-hands' ? 'Raise both hands above your head.' : def.floor ? 'Lift one hand off the floor and wave.' : 'Raise one hand above your head.',
+    ),
     h('p', { class: 'wk-hint' }, 'A quick hello, so I know it is really you.'),
   );
   const loadingCard = h(
@@ -125,6 +129,29 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
   let debugTaps = 0;
   let closed = false;
   let saidPosition = false;
+  let positionSince = 0;
+  let lastGuide = 0;
+  let seenOnce = false;
+
+  /**
+   * You cannot read the screen from the floor, so while you get into
+   * position the coach SAYS what is missing: a soft tone and "I can see you"
+   * the first time you appear, then every 8 seconds the first unticked item
+   * on the checklist, until the set starts.
+   */
+  function guide(view: { tracking: boolean; checks: { ok: boolean }[] }): void {
+    const now = performance.now();
+    if (view.tracking && !seenOnce) {
+      seenOnce = true;
+      coach.ding();
+      coach.say(LINES.seeYou, 'cue');
+    }
+    if (now - positionSince < 5000 || now - lastGuide < 8000) return;
+    const failing = view.checks.findIndex((c) => !c.ok);
+    if (failing < 0) return;
+    lastGuide = now;
+    coach.say(runner.isDark && failing === 0 ? 'It is quite dark. More light would help me see you.' : positionGuide(def, failing));
+  }
   let award: AwardResult | null = null;
   let questBonuses: Bonus[] = [];
 
@@ -174,11 +201,16 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
     {
       onPhase(phase: SetPhase) {
         root.dataset.phase = phase;
-        if (phase === 'checkin') coach.say(options.checkIn === 'both-hands' ? LINES.checkInBoth : LINES.checkIn);
+        if (phase === 'checkin') coach.say(options.checkIn === 'both-hands' ? LINES.checkInBoth : def.floor ? LINES.checkInFloor : LINES.checkIn);
+        if (phase === 'position') {
+          positionSince = performance.now();
+          lastGuide = positionSince;
+          seenOnce = false;
+        }
         if (phase === 'position' && !saidPosition) {
           saidPosition = true;
           const amount = timed ? `As many as you can in ${target} seconds` : `${target} ${unit(def, target)}`;
-          coach.say(`${version.name}. ${amount}. ${placement(def)}.`);
+          coach.say(`${version.name}. ${amount}. ${placement(def)}. ${setupHint(def)}`);
         }
         if (phase === 'paused') {
           coach.quiet();
@@ -198,6 +230,7 @@ export async function openWorkout(options: WorkoutOptions): Promise<void> {
           (ring.firstElementChild as HTMLElement).style.transform = `scaleX(${view.readyProgress.toFixed(2)})`;
           lightNote.classList.toggle('show', runner.isDark);
           sleepNote.classList.toggle('show', runner.screenMaySleep);
+          guide(view);
         }
         if (!debugBox.hidden) debugBox.textContent = runner.debugText;
       },
